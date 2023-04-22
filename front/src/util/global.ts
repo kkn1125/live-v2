@@ -26,9 +26,10 @@ enum INTERCEPT {
 }
 
 enum SIGNAL {
-  ROOM = "INTERCEPT/ROOM",
-  USER = "INTERCEPT/USER",
-  STREAM = "INTERCEPT/STREAM",
+  ROOM = "SIGNAL/ROOM",
+  USER = "SIGNAL/USER",
+  STREAM = "SIGNAL/STREAM",
+  CHAT = "SIGNAL/CHAT",
 }
 
 /* context tools */
@@ -37,6 +38,42 @@ enum LIVE_SOCKET_ACTION {
   INITIALIZE = "LIVE_SOCKET/INITIALIZE",
   DISCONNECT = "LIVE_SOCKET/DISCONNECT",
 }
+
+type LiveSocketBasicActionType = "send" | "fetch";
+type LiveSocketSpecialActionType = "create" | "delete" | "find";
+type LiveSocketActionType =
+  | LiveSocketBasicActionType
+  | LiveSocketSpecialActionType;
+
+type BasicLiveSocketEventType =
+  | INTERCEPT.OPEN
+  | INTERCEPT.CLOSE
+  | INTERCEPT.ERROR
+  | INTERCEPT.MESSAGE;
+
+type SpecialLiveSocketEventType =
+  | INTERCEPT.NON_BINARY_MESSAGE
+  | INTERCEPT.BINARY_MESSAGE;
+
+type DataLiveSocketEventType = SpecialLiveSocketEventType | SIGNAL;
+
+type LiveSocketEventType =
+  | BasicLiveSocketEventType
+  | SpecialLiveSocketEventType
+  | DataLiveSocketEventType;
+
+type BasicLiveSocketEventListenerType = (
+  type: string,
+  message: MessageEvent<any>
+) => void;
+type DataLiveSocketEventListenerType = (
+  type: string,
+  message: MessageEvent<any>,
+  data: Object
+) => void;
+type LiveSocketEventListenerType =
+  | BasicLiveSocketEventListenerType
+  | DataLiveSocketEventListenerType;
 
 export {
   APP_AUTHOR,
@@ -51,4 +88,19 @@ export {
   INTERCEPT,
   SIGNAL,
   LIVE_SOCKET_ACTION,
+};
+
+export type {
+  BasicLiveSocketEventType,
+  SpecialLiveSocketEventType,
+  DataLiveSocketEventType,
+  LiveSocketEventType,
+  //
+  BasicLiveSocketEventListenerType,
+  DataLiveSocketEventListenerType,
+  LiveSocketEventListenerType,
+  //
+  LiveSocketBasicActionType,
+  LiveSocketSpecialActionType,
+  LiveSocketActionType,
 };

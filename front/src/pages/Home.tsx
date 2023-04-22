@@ -6,12 +6,22 @@ import {
   LiveSocketDispatchContext,
 } from "../context/LiveSocketProvider";
 import LiveSocket from "../model/LiveSocket";
-import { LIVE_SOCKET_ACTION } from "../util/global";
+import { INTERCEPT, LIVE_SOCKET_ACTION, SIGNAL } from "../util/global";
 
 function Home() {
   const socket = useContext(LiveSocketContext);
   const socketDispatch = useContext(LiveSocketDispatchContext);
   useEffect(() => {
+    socket.on(INTERCEPT.OPEN, (type, origin) => {
+      console.log(type, origin);
+      socket.sendNonBinary(SIGNAL.ROOM, "create", {}).then((result) => {
+        console.log("result", result);
+      });
+    });
+    socket.on(INTERCEPT.NON_BINARY_MESSAGE, (type, origin) => {
+      console.log(type, origin);
+    });
+
     socketDispatch({
       type: LIVE_SOCKET_ACTION.CONNECT,
       protocol: "ws",
