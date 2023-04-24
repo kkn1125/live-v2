@@ -11,12 +11,23 @@ import type {
   LiveSocketSpecialActionType,
 } from "../util/global";
 import { INTERCEPT, LIVE_SOCKET_ACTION, SIGNAL } from "../util/global";
+import { convert } from "../util/tool";
 
 const { Field, Message } = protobufjs;
 
-const fields = ["id", "action", "data", "file", "result", "client", "server"];
+const fields = [
+  "id",
+  "type",
+  "action",
+  "data",
+  "file",
+  "result",
+  "client",
+  "server",
+];
 
 for (let index in fields) {
+  if (fields[index] in (Message.$type?.fields || {})) continue;
   switch (fields[index]) {
     case "id":
       Field.d(
@@ -25,6 +36,7 @@ for (let index in fields) {
         "optional"
       )(Message.prototype, fields[index]);
       break;
+    case "type":
     case "action":
     case "data":
     case "file":
@@ -56,17 +68,17 @@ export default class LiveSocket {
   protocol: string;
   host: string;
   port: number;
-  queries: Object = "";
+  queries: Object;
 
   socket: WebSocket;
   events: {
     [key: string]: {
-      promise: (value: any) => void;
+      promise: ((value: any) => void)[];
       listeners:
         | BasicLiveSocketEventListenerType[]
         | DataLiveSocketEventListenerType[];
     };
-  };
+  } = {};
 
   constructor(protocol?: "wss" | "ws", host?: string, port?: number) {
     /* 기본 값 세팅 */
@@ -75,18 +87,18 @@ export default class LiveSocket {
     port && (this.port = port);
   }
 
-  connect(queries: Object = "") {
+  connect(queries: Object) {
     /* 기본 값 없으면 새로 받아서 다시 설정 */
     // !this.protocol && protocol && (this.protocol = protocol);
     // !this.host && host && (this.host = host);
     // !this.port && port && (this.port = port);
-    !this.queries && queries && (this.queries = queries);
+    queries && (this.queries = queries);
 
     const query = Object.entries(this.queries)
       .map(([k, v]) => `${k}=${v}`)
       .join("&");
     const connectUrl = `${this.protocol}://${this.host}:${this.port}/${
-      query || `?${query}`
+      query ? `?q=${encodeURIComponent(query)}` : ""
     }`;
 
     this.socket = new WebSocket(connectUrl);
@@ -128,21 +140,19 @@ export default class LiveSocket {
     this.callEventListeners(INTERCEPT.ERROR, e);
   }
 
-  onMessage(message) {
-    LiveSocket.log("message");
-    this.callEventListeners(INTERCEPT.MESSAGE, message);
+  onMessage({ data }) {
+    LiveSocket.log("message", data);
+    this.callEventListeners(INTERCEPT.MESSAGE, data);
     try {
       // non-binary data
-      const nonBinaryData = JSON.parse(message);
-      this.callEventListeners(
-        INTERCEPT.NON_BINARY_MESSAGE,
-        message,
-        nonBinaryData
-      );
+      const nonBinaryData = JSON.parse(data);
+      console.log("nonBinaryData", nonBinaryData);
+      this.callEventListeners(nonBinaryData.type, data, nonBinaryData);
     } catch (e) {
       // binary data
-      const binaryData = this.decoding(message);
-      this.callEventListeners(INTERCEPT.BINARY_MESSAGE, message, binaryData);
+      const binaryData = this.decoding(data);
+      console.log("binaryData", binaryData);
+      this.callEventListeners(binaryData.type, data, convert(binaryData));
     }
   }
 
@@ -161,23 +171,26 @@ export default class LiveSocket {
     b: MessageEvent<any>,
     c?: Object
   ): void {
+    console.log(this.events);
     if (c) {
       (this.events[a].listeners as DataLiveSocketEventListenerType[]).forEach(
         (cb) => cb.call(this, a, b, c)
       );
-      this.events[a].promise(c);
+      this.events[a].promise.forEach((prm) => prm(c));
+      this.events[a].promise = [];
     } else {
       (this.events[a].listeners as BasicLiveSocketEventListenerType[]).forEach(
         (cb) => cb.call(this, a, b)
       );
-      this.events[a].promise(b);
+      this.events[a].promise.forEach((prm) => prm(b));
+      this.events[a].promise = [];
     }
   }
 
-  initListener(type) {
+  initListener(type: LiveSocketEventType) {
     if (!this.events[type]) {
       this.events[type] = {
-        promise: (value: any) => {}, // 필요없을수도?
+        promise: [],
         listeners: [],
       };
     }
@@ -208,23 +221,23 @@ export default class LiveSocket {
   sendBinary(
     type: SIGNAL,
     action: LiveSocketBasicActionType,
-    message: ArrayBuffer
+    message: Object
   ): Promise<any>;
   sendBinary(
     type: SIGNAL,
     action: LiveSocketSpecialActionType,
-    message: ArrayBuffer
+    message: Object
   ): Promise<any>;
   sendBinary(
     type: SIGNAL,
     action: LiveSocketActionType,
-    message: ArrayBuffer
+    message: Object
   ): Promise<any> {
-    const packet = this.sendNonBinaryFormatting(type, action, message);
+    const packet = this.sendBinaryFormatting(type, action, message);
     this.socket.send(packet);
     return new Promise((resolve) => {
       if (this.events[type]) {
-        this.events[type].promise = resolve;
+        this.events[type].promise.push(resolve);
       }
     });
   }
@@ -247,7 +260,7 @@ export default class LiveSocket {
     const packet = this.sendNonBinaryFormatting(type, action, message);
     this.socket.send(packet);
     return new Promise((resolve) => {
-      resolve(true);
+      this.events[type].promise.push(resolve);
     });
   }
 
@@ -273,10 +286,10 @@ export default class LiveSocket {
     });
   }
   sendBinaryFormatting(type: SIGNAL, action: LiveSocketActionType, data: any) {
-    return {
+    return this.encoding({
       type,
       action,
       data: JSON.stringify(data),
-    };
+    });
   }
 }

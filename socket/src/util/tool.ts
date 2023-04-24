@@ -1,3 +1,8 @@
+import uWS, { TemplatedApp } from "uWebSockets.js";
+import protobufjs from "protobufjs";
+
+const { Message } = protobufjs;
+
 const dev = function (this: Console) {
   let prefix = "";
   return Object.assign(
@@ -18,4 +23,54 @@ const dev = function (this: Console) {
   );
 }.call(console);
 
-export { dev };
+function encodeForBinary(data: any, result: any = {}) {
+  const convert = Object.assign(
+    { ...data },
+    { data: JSON.stringify(data.data), result: JSON.stringify(result) }
+  );
+  return Message.encode(new Message(convert)).finish();
+}
+
+function encodeForNonBinary(data: any, result: any = {}) {
+  return JSON.stringify(Object.assign({ ...data }, { result }));
+}
+
+function getEncoder(isBinary: boolean) {
+  return isBinary ? encodeForBinary : encodeForNonBinary;
+}
+
+function sendMe(
+  ws: uWS.WebSocket<unknown>,
+  data: Object,
+  isBinary: boolean = false
+) {
+  const encoder = getEncoder(isBinary);
+  ws.send(encoder(data), isBinary);
+}
+function sendOther(
+  topic: string,
+  ws: uWS.WebSocket<unknown>,
+  data: Object,
+  isBinary: boolean = false
+) {
+  const encoder = getEncoder(isBinary);
+  ws.publish(topic, encoder(data), isBinary);
+}
+function broadcast(
+  app: TemplatedApp,
+  ws: uWS.WebSocket<unknown>,
+  data: Object,
+  isBinary: boolean = false
+) {
+  const encoder = getEncoder(isBinary);
+  app.publish("global", encoder(data), isBinary);
+}
+
+export {
+  dev,
+  encodeForBinary,
+  encodeForNonBinary,
+  sendMe,
+  sendOther,
+  broadcast,
+};

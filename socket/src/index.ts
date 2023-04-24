@@ -1,8 +1,57 @@
 /* A quite detailed WebSockets upgrade example "async" */
 
 import uWS from "uWebSockets.js";
+import messageHandler from "./service/messageHandler";
 import { PORT } from "./util/global";
 import { dev } from "./util/tool";
+import protobufjs from "protobufjs";
+
+const { Field, Message } = protobufjs;
+
+const fields = [
+  "id",
+  "type",
+  "action",
+  "data",
+  "file",
+  "result",
+  "client",
+  "server",
+];
+
+for (let index in fields) {
+  if (fields[index] in (Message.$type?.fields || {})) continue;
+  switch (fields[index]) {
+    case "id":
+      Field.d(
+        Number(index),
+        "float",
+        "optional"
+      )(Message.prototype, fields[index]);
+      break;
+    case "type":
+    case "action":
+    case "data":
+    case "file":
+    case "result":
+      Field.d(
+        Number(index),
+        "string",
+        "optional"
+      )(Message.prototype, fields[index]);
+      break;
+    case "client":
+    case "server":
+      Field.d(
+        Number(index),
+        "bool",
+        "optional"
+      )(Message.prototype, fields[index]);
+      break;
+    default:
+      break;
+  }
+}
 
 const app = uWS
   .App({})
@@ -18,7 +67,12 @@ const app = uWS
           req.getUrl() +
           "!"
       );
-
+      const encodedURI = req.getQuery().slice(2);
+      const decodedURI = decodeURIComponent(encodedURI);
+      const parsingQueries = Object.fromEntries(
+        decodedURI.split("&").map((query) => query.split("="))
+      );
+      dev.log(parsingQueries);
       /* Keep track of abortions */
       const upgradeAborted = { aborted: false };
 
@@ -44,6 +98,7 @@ const app = uWS
         res.upgrade(
           {
             url: url,
+            ...parsingQueries,
           },
           /* Use our copies here */
           secWebSocketKey,
@@ -60,11 +115,16 @@ const app = uWS
       });
     },
     open: (ws) => {
+      ws.subscribe("global");
+      (ws as any).roomId && ws.subscribe((ws as any).roomId);
+      (ws as any).userId && ws.subscribe((ws as any).userId);
       console.log("A WebSocket connected with URL: " + (ws as any).url);
     },
     message: (ws, message, isBinary) => {
       /* Ok is false if backpressure was built up, wait for drain */
-      let ok = ws.send(message, isBinary);
+      console.log("message", message);
+      messageHandler(isBinary, app, ws, message);
+      // let ok = ws.send(message, isBinary);
     },
     drain: (ws) => {
       console.log("WebSocket backpressure: " + ws.getBufferedAmount());

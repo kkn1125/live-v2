@@ -18,4 +18,10 @@ const dev = function (this: Console) {
   );
 }.call(console);
 
-export { dev };
+const convert = (obj: any) =>
+  Object.assign(
+    { ...obj },
+    { data: JSON.parse(obj.data), result: JSON.parse(obj.result) }
+  );
+
+export { dev, convert };
