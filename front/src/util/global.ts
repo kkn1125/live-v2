@@ -12,6 +12,11 @@ const SOCKET_PROTOCOL = import.meta.env.VITE_SOCKET_PROTOCOL;
 const SOCKET_HOST = import.meta.env.VITE_SOCKET_HOST;
 const SOCKET_PORT = import.meta.env.VITE_SOCKET_PORT;
 
+const answer = {
+  create: "생성",
+  enter: "입장",
+};
+
 /* media codecs */
 const CODEC = "video/webm;codecs=vp9,opus";
 
@@ -36,11 +41,31 @@ enum SIGNAL {
 enum LIVE_SOCKET_ACTION {
   CONNECT = "LIVE_SOCKET/CONNECT",
   INITIALIZE = "LIVE_SOCKET/INITIALIZE",
+  JOIN = "LIVE_SOCKET/JOIN",
+  OUT = "LIVE_SOCKET/OUT",
   DISCONNECT = "LIVE_SOCKET/DISCONNECT",
 }
 
-type LiveSocketBasicActionType = "send" | "fetch";
-type LiveSocketSpecialActionType = "create" | "delete" | "find";
+type DataType = {
+  type: BasicLiveSocketEventType &
+    SpecialLiveSocketEventType &
+    DataLiveSocketEventType;
+  action: LiveSocketActionType;
+  data: any;
+  result: any;
+  client: boolean;
+  server: boolean;
+};
+type LiveSocketBasicActionType =
+  | "send"
+  | "fetch"
+  | `fetch/${"stream" | "streams"}`;
+type LiveSocketSpecialActionType =
+  | "create"
+  | "delete"
+  | "find"
+  | "update"
+  | `update/${"join" | "out"}`;
 type LiveSocketActionType =
   | LiveSocketBasicActionType
   | LiveSocketSpecialActionType;
@@ -63,19 +88,21 @@ type LiveSocketEventType =
   | DataLiveSocketEventType;
 
 type BasicLiveSocketEventListenerType = (
-  type: string,
-  message: MessageEvent<any>
+  type: LiveSocketEventType,
+  message: Event | CloseEvent | MessageEvent<any>
 ) => void;
 type DataLiveSocketEventListenerType = (
-  type: string,
-  message: MessageEvent<any>,
-  data: Object
+  type: LiveSocketEventType,
+  message: Event | CloseEvent | MessageEvent<any>,
+  data: DataType
 ) => void;
 type LiveSocketEventListenerType =
   | BasicLiveSocketEventListenerType
   | DataLiveSocketEventListenerType;
 
 export {
+  answer,
+  //
   APP_AUTHOR,
   APP_BRAND_NAME,
   APP_VERSION,
@@ -103,4 +130,6 @@ export type {
   LiveSocketBasicActionType,
   LiveSocketSpecialActionType,
   LiveSocketActionType,
+  //
+  DataType,
 };

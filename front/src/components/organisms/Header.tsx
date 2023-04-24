@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 
 const page = (path: string, name: string) => ({ path, name });
 const setting = (name: string, cb: Function) => ({ name, cb });
-const pages = [page("/", "home")];
+const pages = [page("/", "home"), page("/live", "live")];
 const settings = [
   setting("profile", (cb: Function) => {
     cb();

@@ -13,9 +13,11 @@
 // }
 
 declare interface EnterAnswerType {
+  type: "create" | "enter";
   title?: string | React.ReactElement | React.ReactElement[];
   content?: string | React.ReactElement | React.ReactElement[];
   to?: string;
+  roomId?: string;
 }
 
 declare interface EnterDialogType extends EnterAnswerType {

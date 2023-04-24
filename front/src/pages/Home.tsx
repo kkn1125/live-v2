@@ -1,6 +1,8 @@
 import { Typography } from "@mui/material";
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { v4 } from "uuid";
 import EnterAnswer from "../components/moleculars/EnterAnswer";
+import Chat from "../components/organisms/Chat";
 import {
   LiveSocketContext,
   LiveSocketDispatchContext,
@@ -9,38 +11,52 @@ import LiveSocket from "../model/LiveSocket";
 import { INTERCEPT, LIVE_SOCKET_ACTION, SIGNAL } from "../util/global";
 
 function Home() {
+  const [rooms, setRooms] = useState<any[]>([]);
   const socket = useContext(LiveSocketContext);
   const socketDispatch = useContext(LiveSocketDispatchContext);
   useEffect(() => {
-    socket.on(INTERCEPT.OPEN, (type, origin) => {
-      console.log(type, origin);
-      socket.sendNonBinary(SIGNAL.ROOM, "create", {}).then((result) => {
-        console.log("result", result);
+    socket.on(INTERCEPT.OPEN, () => {
+      socket.on(SIGNAL.ROOM, (type, origin, data) => {
+        console.log(data);
+        if (data.action === "create") {
+          const room = data.result.room;
+          setRooms((rooms) => [...rooms, room]);
+        }
+        if (data.action === "fetch") {
+          const rooms = data.result.rooms;
+          console.log(rooms);
+          setRooms(rooms);
+        }
       });
+      socket.sendBinary(SIGNAL.ROOM, "fetch");
     });
-    socket.on(INTERCEPT.NON_BINARY_MESSAGE, (type, origin) => {
-      console.log(type, origin);
-    });
-
-    socketDispatch({
-      type: LIVE_SOCKET_ACTION.CONNECT,
-      protocol: "ws",
-      host: "localhost",
-      port: 4000,
-    });
-    socketDispatch({
-      type: LIVE_SOCKET_ACTION.INITIALIZE,
-    });
-    console.log(socket);
+    return () => {
+      // socketDispatch({
+      //   type: LIVE_SOCKET_ACTION.OUT,
+      //   roomId:
+      // });
+    };
   }, []);
 
   return (
     <div>
+      {rooms.map((room, i) => (
+        <EnterAnswer
+          key={i}
+          type='enter'
+          title={room.title + "입장"}
+          content={<Typography component='span'>room</Typography>}
+          to="/live"
+          roomId={room.id}
+        />
+      ))}
       <EnterAnswer
-        title={"/" + "path" + " 입장"}
-        content={<Typography component='span'>테스트</Typography>}
-        to='/test'
+        type='create'
+        title={"룸 생성"}
+        content={<Typography component='span'>room</Typography>}
+        to='/live'
       />
+      <Chat />
     </div>
   );
 }

@@ -5,7 +5,8 @@ import LiveHeader from "../organisms/LiveHeader";
 
 function LiveLayout() {
   return (
-    <Stack sx={{ backgroundColor: "#121212", color: "#ffffff" }}>
+    <Stack
+      sx={{ backgroundColor: "#121212", color: "#ffffff", height: "100%" }}>
       <LiveHeader />
       <Toolbar />
       <Box component={Container}>

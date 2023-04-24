@@ -18,4 +18,7 @@ const dev = function (this: Console) {
   );
 }.call(console);
 
-export { dev };
+const queryParser = (queries: string) =>
+  Object.fromEntries(queries.split("&").map((query) => query.split("=")));
+
+export { dev, queryParser };

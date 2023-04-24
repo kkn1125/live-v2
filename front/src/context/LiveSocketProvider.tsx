@@ -12,7 +12,7 @@ let initialState = new LiveSocket(SOCKET_PROTOCOL, SOCKET_HOST, SOCKET_PORT);
 export const LiveSocketContext = createContext<LiveSocket>(initialState);
 export const LiveSocketDispatchContext = createContext<Dispatch<any>>(() => {});
 
-const reducer = (state: LiveSocket, action) => {
+const reducer = (state: LiveSocket, action: any) => {
   switch (action.type) {
     case LIVE_SOCKET_ACTION.CONNECT:
       state.connect(action.queries);
@@ -20,7 +20,15 @@ const reducer = (state: LiveSocket, action) => {
     case LIVE_SOCKET_ACTION.INITIALIZE:
       state.initialize();
       return state;
+    case LIVE_SOCKET_ACTION.JOIN:
+      state.join(action.roomId);
+      return state;
+    case LIVE_SOCKET_ACTION.OUT:
+      state.out(action.roomId);
+      return state;
     case LIVE_SOCKET_ACTION.DISCONNECT:
+      state.disconnect();
+      state.socket = null;
       return state;
     default:
       return state;
