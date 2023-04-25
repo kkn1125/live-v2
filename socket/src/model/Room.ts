@@ -22,6 +22,7 @@ export default class Room {
   category: string = "";
   tags: string[] = [];
   streams: ArrayBuffer[] = [];
+  link: string = "";
 
   /* room users */
   admin?: User;
@@ -36,6 +37,10 @@ export default class Room {
     id && (this.id = id);
     this.createdAt = +new Date();
     this.updatedAt = +new Date();
+  }
+
+  setLink(link: string) {
+    this.link = link;
   }
 
   findUser(userId: string) {
@@ -97,7 +102,7 @@ export default class Room {
     const buffer = new Uint8Array(stream.split(",").map((s) => Number(s)))
       .buffer;
     this.streams.push(buffer);
-    console.log(this.streams, buffer);
+    console.log("add buffer", buffer);
   }
 
   getStream(index: number) {

@@ -50,9 +50,9 @@ export const VideoJS = ({
       // on prop change, for example:
     } else {
       const player = playerRef.current;
-
-      player.autoplay(options.autoplay);
-      player.src(options.sources);
+      player;
+      // player.autoplay(options.autoplay);
+      // player.src(options.sources);
       player.options({
         autoplay: true,
         controls: true,
@@ -86,9 +86,9 @@ export const VideoJS = ({
   }, [playerRef]);
 
   return (
-    <div data-vjs-player>
-      <div ref={videoRef} />
-    </div>
+    <Box data-vjs-player>
+      <Box ref={videoRef} />
+    </Box>
   );
 };
 

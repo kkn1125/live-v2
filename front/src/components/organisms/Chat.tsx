@@ -13,8 +13,21 @@ import ChatBox from "../moleculars/ChatBox";
 function Chat() {
   const socket = useContext(LiveSocketContext);
   const socketDispatch = useContext(LiveSocketDispatchContext);
-  const [chatList, setChatList] = useState([]);
+  const [chatList, setChatList] = useState<
+    {
+      nickname: string;
+      content: string;
+      createdAt: number;
+    }[]
+  >([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    socket.on(SIGNAL.CHAT, (type, origin, data) => {
+      const message = data.result;
+      setChatList((chatList) => [...chatList, message]);
+    });
+  }, []);
 
   function handleSend() {
     if (inputRef.current) {
@@ -23,6 +36,7 @@ function Chat() {
 
       // do something
       socket.sendBinary(SIGNAL.CHAT, "send", {
+        nickname: "test",
         content: value,
       });
 

@@ -14,27 +14,27 @@ function Home() {
   const [rooms, setRooms] = useState<any[]>([]);
   const socket = useContext(LiveSocketContext);
   const socketDispatch = useContext(LiveSocketDispatchContext);
+
   useEffect(() => {
-    socket.on(INTERCEPT.OPEN, () => {
+    socket.ifActivated(() => {
       socket.on(SIGNAL.ROOM, (type, origin, data) => {
-        console.log(data);
         if (data.action === "create") {
-          const room = data.result.room;
-          setRooms((rooms) => [...rooms, room]);
-        }
-        if (data.action === "fetch") {
-          const rooms = data.result.rooms;
-          console.log(rooms);
-          setRooms(rooms);
+          const roomsData = data.result.rooms;
+          setRooms((rooms) => roomsData);
+        } else if (data.action === "fetch") {
+          const roomsData = data.result.rooms;
+          setRooms((rooms) => roomsData);
         }
       });
       socket.sendBinary(SIGNAL.ROOM, "fetch");
     });
+
     return () => {
       // socketDispatch({
       //   type: LIVE_SOCKET_ACTION.OUT,
       //   roomId:
       // });
+      socket.off(SIGNAL.ROOM);
     };
   }, []);
 
@@ -46,7 +46,7 @@ function Home() {
           type='enter'
           title={room.title + "입장"}
           content={<Typography component='span'>room</Typography>}
-          to="/live"
+          to='/live'
           roomId={room.id}
         />
       ))}

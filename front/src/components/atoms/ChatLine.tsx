@@ -1,13 +1,27 @@
-import { Stack, Typography } from "@mui/material";
+import { Fade, Stack, Typography } from "@mui/material";
 import React from "react";
 
-export type ChatLineType = { nickname: string; content: string; createdAt: number };
+export type ChatLineType = {
+  nickname: string;
+  content: string;
+  createdAt: number;
+};
 
 function ChatLine({ chat }: { chat: ChatLineType }) {
   return (
-    <Stack direction='row'>
-      <Typography>{chat.nickname}</Typography>
-    </Stack>
+    <Fade in timeout={1000}>
+      <Typography>
+        <Typography
+          component='span'
+          fontWeight={700}
+          color={(theme) => theme.palette.grey[600]}>
+          {chat.nickname}
+        </Typography>{" "}
+        {chat.content}
+        {/* |{" "}
+        {new Date(created_at).toLocaleString("ko")} */}
+      </Typography>
+    </Fade>
   );
 }
 

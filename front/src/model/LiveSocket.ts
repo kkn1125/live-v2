@@ -65,6 +65,18 @@ export default class LiveSocket {
     console.log(`🚀 LIVE LOG:`, ...args);
   }
 
+  stateOpen: boolean = false;
+
+  activatePromise() {
+    return new Promise((resolve) => {
+      this.isActivate = resolve;
+      if (this.stateOpen) {
+        this.isActivate(true);
+      }
+    });
+  }
+  isActivate: (value: any) => void = () => {};
+
   protocol: string;
   host: string;
   port: number;
@@ -131,7 +143,15 @@ export default class LiveSocket {
     this.initListener(SIGNAL.USER);
   }
 
+  ifActivated(cb: Function) {
+    this.activatePromise().then(() => {
+      cb.call(this);
+    });
+  }
+
   onOpen(e: Event) {
+    this.stateOpen = true;
+    this.isActivate(true);
     LiveSocket.log("open");
     this.callEventListeners(INTERCEPT.OPEN, e);
   }
@@ -149,7 +169,6 @@ export default class LiveSocket {
   onMessage(message: MessageEvent<any>) {
     const { data } = message;
     LiveSocket.log("message");
-    console.log(message, data);
     this.callEventListeners(INTERCEPT.MESSAGE, data);
     try {
       // non-binary data
@@ -163,7 +182,6 @@ export default class LiveSocket {
     } catch (e) {
       // binary data
       const binaryData = this.decoding(data);
-      console.log(binaryData);
       this.callEventListeners(INTERCEPT.BINARY_MESSAGE, data, binaryData);
       this.callEventListeners(binaryData.type, data, binaryData);
     }
@@ -222,9 +240,17 @@ export default class LiveSocket {
     this.events[type].listeners.push(listener);
   }
 
-  off(type: INTERCEPT | SIGNAL) {
-    if (this.events[type]) {
-      delete this.events[type];
+  off(type: INTERCEPT | SIGNAL | (INTERCEPT | SIGNAL)[]) {
+    if (type instanceof Array) {
+      type.forEach((t) => {
+        if (this.events[t]) {
+          delete this.events[t];
+        }
+      });
+    } else {
+      if (this.events[type]) {
+        delete this.events[type];
+      }
     }
   }
 

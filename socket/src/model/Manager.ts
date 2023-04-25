@@ -2,6 +2,7 @@ import Room, { RoomUpdateType } from "./Room";
 import User from "./User";
 
 export default class Manager {
+  users: User[] = [];
   rooms: Room[] = [];
 
   constructor() {}
@@ -42,6 +43,18 @@ export default class Manager {
     return room;
   }
 
+  findUser(userId: string) {
+    let findUser: User | undefined = undefined;
+    for (let room of this.rooms) {
+      const user = room.users.find((user) => user.id === userId);
+      if (user) {
+        findUser = user;
+        break;
+      }
+    }
+    return findUser;
+  }
+
   join(roomId: string, user: User) {
     const room = this.findRoom(roomId);
     if (room) {
@@ -65,6 +78,16 @@ export default class Manager {
       console.log("room is empty, this room delete!");
     }
     return room;
+  }
+
+  clearEmptyRoom() {
+    this.rooms = this.rooms.filter((room) => {
+      if (room.users.length === 0) {
+        console.log("empty room delete", room);
+        return false;
+      }
+      return true;
+    });
   }
 }
 

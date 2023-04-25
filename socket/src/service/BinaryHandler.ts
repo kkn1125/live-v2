@@ -14,7 +14,7 @@ export default function binaryHandler(
   const decoded = Message.decode(new Uint8Array(message)).toJSON();
   Object.assign(decoded, { data: JSON.parse(decoded.data) });
 
-  console.log("binary data", decoded);
+  // console.log("binary data", decoded);
 
   const base = {
     type: decoded.type,
@@ -26,24 +26,38 @@ export default function binaryHandler(
     case "SIGNAL/ROOM":
       if (base.action === "send") {
         publisher.manager.sendMe(ws, base);
+      } else if (base.action === "send/link") {
+        console.log("🔗🔗🔗🔗🚀🚀🚀", base);
+        const room = manager.findRoomUserIn((ws as any).userId);
+        const link = base.data.link;
+        room.setLink(link);
+        publisher.manager.sendMe(ws, { ...base }, { room, link });
+        publisher.manager.sendOther(ws, room.id, { ...base }, { room, link });
       } else if (base.action === "fetch") {
         const rooms = manager.findRooms();
         publisher.manager.sendMe(ws, base, { rooms });
       } else if (base.action === "find") {
-        publisher.manager.sendMe(ws, base);
+        const room = manager.findRoom(base.data.roomId);
+        publisher.manager.sendMe(ws, base, { room });
       } else if (base.action === "create") {
         const room = manager.createRoom(base.data.roomId);
-        publisher.manager.publish(app, ws, base, { room });
+        ws.subscribe(room.id);
+        const rooms = manager.findRooms();
+        publisher.manager.publish(app, ws, base, { rooms });
       } else if (base.action === "update") {
         const room = manager.findRoom(base.data.roomId);
         room.updateRoom(base.data.roomData);
         publisher.manager.publish(app, ws, base, { room });
       } else if (base.action === "update/join") {
         const room = manager.findRoom(base.data.roomId);
-        room.join(new User((ws as any).userId, base.data.nickname));
+        if (room) {
+          ws.subscribe(room.id);
+          room.join(new User((ws as any).userId, base.data.nickname));
+        }
       } else if (base.action === "update/out") {
         const room = manager.findRoomUserIn((ws as any).userId);
         if (room) {
+          ws.unsubscribe(room.id);
           manager.out(room.id, (ws as any).userId);
         }
       } else if (base.action === "delete") {
@@ -60,14 +74,17 @@ export default function binaryHandler(
       } else if (base.action === "create") {
         const user = new User((ws as any).userId);
         const room = manager.findRoom(base.data.roomId);
+        ws.subscribe(room.id);
         room.join(new User((ws as any).userId));
         publisher.manager.sendMe(ws, base, { room, user });
       } else if (base.action === "update") {
         console.log("update userid", (ws as any).userId);
         const room = manager.findRoomUserIn((ws as any).userId);
-        const user = room.updateUser((ws as any).userId, base.data.userData);
-        console.log(room, user);
-        publisher.manager.publish(app, ws, base, { room, user });
+        if (room) {
+          const user = room.updateUser((ws as any).userId, base.data.userData);
+          console.log(room, user);
+          publisher.manager.publish(app, ws, base, { room, user });
+        }
       } else if (base.action === "delete") {
         const room = manager.out(base.data.roomId, (ws as any).userId);
         publisher.manager.publish(app, ws, base, {
@@ -76,7 +93,22 @@ export default function binaryHandler(
         });
       }
     case "SIGNAL/CHAT":
-      publisher.manager.sendMe(ws, base);
+      if (base.action === "send") {
+        const room = manager.findRoomUserIn((ws as any).userId);
+        if (room) {
+          publisher.manager.publishBinaryTo(app, ws, room.id, base, {
+            nickname: base.data.nickname,
+            content: base.data.content,
+            createdAt: +new Date(),
+          });
+        } else {
+          publisher.manager.publishBinaryTo(app, ws, "global", base, {
+            nickname: base.data.nickname,
+            content: base.data.content,
+            createdAt: +new Date(),
+          });
+        }
+      }
       break;
     case "SIGNAL/STREAM":
       if (base.action === "send") {
@@ -90,7 +122,10 @@ export default function binaryHandler(
         if (room) {
           const stream = room.getStream(base.data.chunkIndex);
           if (stream) {
-            publisher.manager.sendMe(ws, base, { stream });
+            publisher.manager.sendMe(ws, base, {
+              stream,
+              streamPoint: room.streams.length,
+            });
           }
         }
       } else if (base.action === "fetch/streams") {

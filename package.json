@@ -1,0 +1,14 @@
+{
+  "name": "live_ander",
+  "version": "1.0.0",
+  "description": "제 2 라이브커머스 환경 구축.",
+  "main": "index.js",
+  "scripts": {
+    "front": "cd front && npm run dev",
+    "socket": "cd socket && npm run dev",
+    "start": "concurrently --kill-others-on-fail \"npm urn socket\" \"npm run front\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

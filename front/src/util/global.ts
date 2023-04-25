@@ -58,6 +58,7 @@ type DataType = {
 };
 type LiveSocketBasicActionType =
   | "send"
+  | `send/${"link"}`
   | "fetch"
   | `fetch/${"stream" | "streams"}`;
 type LiveSocketSpecialActionType =

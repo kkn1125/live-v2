@@ -36,5 +36,6 @@ declare interface VideoJSType {
   };
   onReady: (player?: Player) => void;
   mediaSource?: MediaSource;
+
   // admin?: boolean;
 }

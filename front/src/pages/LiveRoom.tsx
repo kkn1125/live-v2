@@ -1,4 +1,4 @@
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import React, {
   LegacyRef,
   useContext,
@@ -17,6 +17,10 @@ import {
 } from "../context/LiveSocketProvider";
 import { v4 } from "uuid";
 import { useLocation, useNavigate } from "react-router-dom";
+import Chat from "../components/organisms/Chat";
+import CustomVideo from "../components/moleculars/CustomVideo";
+import Chattings from "../components/moleculars/Chattings";
+import MiniTip from "../components/moleculars/MiniTip";
 
 let mediaSource = new MediaSource();
 let videoBuffer: SourceBuffer | undefined = undefined;
@@ -28,12 +32,14 @@ let recordLoop: NodeJS.Timer;
 let chunkStreamLoop: NodeJS.Timer;
 
 function RecordRoom() {
+  const videoRef = useRef<HTMLVideoElement>();
+  const linkRef = useRef<HTMLInputElement>();
   const locate = useLocation();
   const socket = useContext(LiveSocketContext);
   const socketDispatch = useContext(LiveSocketDispatchContext);
-
-  const playerRef = useRef<Player | null>(null);
-  const currentVideoRef = useRef<Player | null>(null);
+  const [room, setRoom] = useState<any>({});
+  // const playerRef = useRef<Player | null>(null);
+  const currentVideoRef = useRef<HTMLVideoElement>();
   const [videoJsOptions, setVideoJsOptions] = useState({
     autoplay: true,
     controls: true,
@@ -83,16 +89,29 @@ function RecordRoom() {
   useEffect(() => {
     /* my video */
     (async () => {
-      const currentVideo = currentVideoRef.current;
+      const currentVideo = currentVideoRef.current as HTMLVideoElement;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
-      (currentVideo?.tech().el() as HTMLVideoElement).srcObject = stream;
+      currentVideo.srcObject = stream;
+
+      const video = videoRef.current as HTMLVideoElement;
+      video.src = URL.createObjectURL(mediaSource);
     })();
   }, []);
 
   useEffect(() => {
+    socket.on(SIGNAL.USER, (type, origin, data) => {
+      if (
+        data.action === "create" ||
+        data.action === "update" ||
+        data.action === "delete"
+      ) {
+        setRoom((room) => data.result.room);
+      }
+    });
+
     socket.sendBinary(SIGNAL.ROOM, "create", {
       roomId: locate.state.roomId,
     });
@@ -123,86 +142,91 @@ function RecordRoom() {
   }, []);
 
   async function start() {
-    const player = playerRef.current;
+    // const player = playerRef.current;
 
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
     });
 
-    videoBuffer = mediaSource.addSourceBuffer(CODEC);
-
     registerRecord(stream);
 
+    videoBuffer = mediaSource.addSourceBuffer(CODEC);
+
     chunkStreamLoop = setInterval(() => {
-      const stream = streams[countDownloadChunk];
-      if (stream) {
-        console.log("get chunk", countDownloadChunk);
-        videoBuffer?.appendBuffer(stream);
-        socket.sendBinary(SIGNAL.STREAM, "send", {
-          stream: new Uint8Array(stream).toString(),
-        });
-        countDownloadChunk++;
+      if (videoBuffer) {
+        const stream = streams[countDownloadChunk];
+        if (stream) {
+          console.log("get chunk", countDownloadChunk);
+          videoBuffer?.appendBuffer(stream);
+          socket.sendBinary(SIGNAL.STREAM, "send", {
+            stream: new Uint8Array(stream).toString(),
+          });
+          countDownloadChunk++;
+        }
       }
     }, 500);
   }
 
-  const handleCurrentPlayerReady = (player) => {
-    currentVideoRef.current = player;
-
-    // You can handle player events here, for example:
-    player.on("waiting", () => {
-      videojs.log("player is waiting");
+  function handleAddLink() {
+    const linkEl = linkRef.current as HTMLInputElement;
+    socket.sendBinary(SIGNAL.ROOM, "send/link", {
+      link: linkEl.value,
     });
-
-    player.on("dispose", () => {
-      videojs.log("player will dispose");
-    });
-  };
-  const handlePlayerReady = (player) => {
-    playerRef.current = player;
-
-    // You can handle player events here, for example:
-    player.on("waiting", () => {
-      videojs.log("player is waiting");
-    });
-
-    player.on("dispose", () => {
-      videojs.log("player will dispose");
-    });
-  };
+    linkEl.value = "";
+  }
+  function handleAddLinkEnter(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      handleAddLink();
+    }
+  }
 
   return (
-    <Stack direction='row' gap={5}>
+    <Stack
+      direction='row'
+      gap={5}
+      sx={{
+        px: 3,
+      }}>
       <Stack
         sx={{
           flex: 1,
         }}>
         <Stack gap={5}>
+          <Typography fontWeight={700}>
+            Room Session: {locate.state.roomId}
+          </Typography>
           <Stack gap={1}>
             <Box sx={{ flex: 1 }}>
               <Typography fontSize={20} fontWeight={700} gutterBottom>
                 Current Video
               </Typography>
             </Box>
-            <VideoJS
+            {/* <VideoJS
               playerRef={currentVideoRef}
               options={videoJsOptions}
               onReady={handleCurrentPlayerReady}
-            />
+            /> */}
+            <CustomVideo videoRef={currentVideoRef} />
           </Stack>
           <Stack gap={1}>
             <Box sx={{ flex: 1 }}>
               <Typography fontSize={20} fontWeight={700} gutterBottom>
                 Live Video
               </Typography>
+              <MiniTip
+                badge='live'
+                view={room?.users?.length || 0}
+                color={"error"}
+              />
             </Box>
-            <VideoJS
+            <CustomVideo videoRef={videoRef} />
+            {/* <VideoJS
               playerRef={playerRef}
               options={videoJsOptions}
               onReady={handlePlayerReady}
               mediaSource={mediaSource}
-            />
+            /> */}
           </Stack>
         </Stack>
       </Stack>
@@ -210,8 +234,34 @@ function RecordRoom() {
         sx={{
           flex: 1,
         }}>
-        <Box sx={{ flex: 1 }}>chattings</Box>
-        <Box sx={{ flex: 1 }}>custom pannels</Box>
+        <Box sx={{ flex: 1 }}>
+          <Typography fontSize={20} fontWeight={700}>
+            🔗 링크 등록
+          </Typography>
+          <Stack direction='row'>
+            <TextField
+              inputRef={linkRef}
+              size='small'
+              fullWidth
+              sx={{
+                flex: 1,
+                ["& .MuiInputBase-root"]: {
+                  backgroundColor: "#56565656",
+                },
+                ["& input"]: {
+                  color: "#ffffff",
+                },
+              }}
+              onKeyDown={handleAddLinkEnter}
+            />
+            <Button variant='contained' color='success' onClick={handleAddLink}>
+              등록
+            </Button>
+          </Stack>
+        </Box>
+        <Box sx={{ flex: 1 }}>
+          <Chattings />
+        </Box>
       </Stack>
     </Stack>
   );

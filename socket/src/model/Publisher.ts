@@ -61,8 +61,13 @@ class BaseManager {
   sendMe(ws: uWS.WebSocket<unknown>, data: Object, result: Object = {}) {
     ws.send(this.parser.encode(data, result), this.isBinary);
   }
-  sendOther(ws: uWS.WebSocket<unknown>, data: Object, result: Object = {}) {
-    ws.send(this.parser.encode(data, result), this.isBinary);
+  sendOther(
+    ws: uWS.WebSocket<unknown>,
+    to: string,
+    data: Object,
+    result: Object = {}
+  ) {
+    ws.publish(to, this.parser.encode(data, result), this.isBinary);
   }
   publishBinaryTo(
     app: TemplatedApp,
