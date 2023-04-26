@@ -114,12 +114,16 @@ export default function binaryHandler(
       if (base.action === "send") {
         const room = manager.findRoomUserIn((ws as any).userId);
         if (room) {
+          /* add stream */
           room.addStream(base.data.stream);
+          /* add stream */
+
           publisher.manager.sendMe(ws, base);
         }
       } else if (base.action === "fetch") {
         const room = manager.findRoomUserIn((ws as any).userId);
         if (room) {
+          /* get stream */
           const stream = room.getStream(base.data.chunkIndex);
           if (stream) {
             publisher.manager.sendMe(ws, base, {
@@ -127,8 +131,10 @@ export default function binaryHandler(
               streamPoint: room.streams.length,
             });
           }
+          /* get stream */
         }
       } else if (base.action === "fetch/streams") {
+        /* 미사용 영역 */
         const room = manager.findRoomUserIn((ws as any).userId);
         if (room) {
           const streams = room.streams;

@@ -1,12 +1,15 @@
 import Room, { RoomUpdateType } from "./Room";
 import User from "./User";
 
+
+
 export default class Manager {
   users: User[] = [];
   rooms: Room[] = [];
 
   constructor() {}
 
+  /* room interface */
   findRooms() {
     return this.rooms;
   }
@@ -43,6 +46,7 @@ export default class Manager {
     return room;
   }
 
+  /* user interface */
   findUser(userId: string) {
     let findUser: User | undefined = undefined;
     for (let room of this.rooms) {

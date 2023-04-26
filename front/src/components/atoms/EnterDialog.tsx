@@ -54,7 +54,31 @@ export default function EnterDialog({
             }}>
             nickname
           </Typography>
-          <TextField inputRef={nicknameRef} size='small' />
+          <TextField
+            inputRef={nicknameRef}
+            size='small'
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleClose();
+                if (nicknameRef.current) {
+                  const value = nicknameRef.current.value;
+                  if (value) {
+                    to &&
+                      navigate(to, {
+                        state: {
+                          roomId,
+                          nickname: value,
+                        },
+                      });
+                    nicknameRef.current.value = "";
+                  }
+                }
+              }
+              if (e.key === "Escape") {
+                handleClose();
+              }
+            }}
+          />
         </Stack>
       </DialogContent>
       <DialogActions>

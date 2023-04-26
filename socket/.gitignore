@@ -26,6 +26,6 @@ dist-ssr
 \[x\]*
 
 __tests__/
-**/*.test.*
+# **/*.test.*
 
 *-lock.json

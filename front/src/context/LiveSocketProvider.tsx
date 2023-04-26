@@ -10,7 +10,12 @@ import {
 let initialState = new LiveSocket(SOCKET_PROTOCOL, SOCKET_HOST, SOCKET_PORT);
 
 export const LiveSocketContext = createContext<LiveSocket>(initialState);
-export const LiveSocketDispatchContext = createContext<Dispatch<any>>(() => {});
+export const LiveSocketDispatchContext = createContext<
+  Dispatch<{
+    type: LIVE_SOCKET_ACTION;
+    [k: string]: any;
+  }>
+>(() => {});
 
 const reducer = (state: LiveSocket, action: any) => {
   switch (action.type) {
