@@ -31,6 +31,9 @@ const reducer = (state: LiveSocket, action: any) => {
     case LIVE_SOCKET_ACTION.OUT:
       state.out(action.roomId);
       return state;
+    case LIVE_SOCKET_ACTION.DELETE_ROOM:
+      state.deleteRoom(action.roomId);
+      return state;
     case LIVE_SOCKET_ACTION.DISCONNECT:
       state.disconnect();
       state.socket = null;

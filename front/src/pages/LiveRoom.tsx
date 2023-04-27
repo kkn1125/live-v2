@@ -3,6 +3,7 @@ import {
   AlertTitle,
   Box,
   Button,
+  Chip,
   MenuItem,
   Select,
   SelectChangeEvent,
@@ -32,12 +33,15 @@ import Chat from "../components/organisms/Chat";
 import CustomVideo from "../components/moleculars/CustomVideo";
 import Chattings from "../components/moleculars/Chattings";
 import MiniTip from "../components/moleculars/MiniTip";
+import PhotoCameraFrontIcon from "@mui/icons-material/PhotoCameraFront";
 
 let mediaSource = new MediaSource();
 let videoBuffer: SourceBuffer | undefined = undefined;
 let streams: ArrayBuffer[] = [];
 let countUploadChunk = 0;
 let countDownloadChunk = 0;
+let isStartedLive: number;
+let streamPoint = 0;
 
 let recordLoop: NodeJS.Timer;
 let chunkStreamLoop: NodeJS.Timer;
@@ -57,6 +61,8 @@ function RecordRoom() {
     m: 1,
     s: 1,
   });
+  const [isLive, setIsLive] = useState(false);
+
   const [startLiveTime, setStartLiveTime] = useState(0);
   const nowRef = useRef(new Date());
   // const playerRef = useRef<Player | null>(null);
@@ -129,6 +135,11 @@ function RecordRoom() {
   }, []);
 
   useEffect(() => {
+    socket.on(SIGNAL.ROOM, (type, origin, data) => {
+      if (data.action === "update/join" || data.action === "update/out") {
+        setRoom((room) => data.result.room);
+      }
+    });
     socket.on(SIGNAL.USER, (type, origin, data) => {
       if (
         data.action === "create" ||
@@ -138,27 +149,23 @@ function RecordRoom() {
         setRoom((room) => data.result.room);
       }
     });
-
-    connectSocket().then(() => {
-      start().catch((e) => {
-        socketDispatch({
-          type: LIVE_SOCKET_ACTION.OUT,
-          roomId: locate.state.roomId,
-        });
-        navigate("/");
-      });
+    socket.on(SIGNAL.STREAM, (type, origin, data) => {
+      if (data.action === "send") {
+        streamPoint = Number(data.result.streamPoint);
+      }
     });
 
     return () => {
       clearInterval(recordLoop);
       clearInterval(chunkStreamLoop);
+      cancelAnimationFrame(isStartedLive);
       mediaSource = new MediaSource();
       videoBuffer = undefined;
       streams;
       countUploadChunk;
       countDownloadChunk;
       socketDispatch({
-        type: LIVE_SOCKET_ACTION.OUT,
+        type: LIVE_SOCKET_ACTION.DELETE_ROOM,
         roomId: locate.state.roomId,
       });
     };
@@ -170,6 +177,12 @@ function RecordRoom() {
     });
     socket.sendBinary(SIGNAL.USER, "create", {
       roomId: locate.state.roomId,
+    });
+    socket.sendBinary(SIGNAL.ROOM, "update", {
+      roomId: locate.state.roomId,
+      roomData: {
+        title: locate.state.title,
+      },
     });
     socket.sendBinary(SIGNAL.USER, "update", {
       userData: {
@@ -200,6 +213,13 @@ function RecordRoom() {
           socket.sendBinary(SIGNAL.STREAM, "send", {
             stream: new Uint8Array(stream).toString(),
           });
+
+          if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
+            setIsLive(false);
+          } else {
+            setIsLive(true);
+          }
+
           countDownloadChunk++;
         }
       }
@@ -244,7 +264,6 @@ function RecordRoom() {
   function startLive() {
     console.log("live start");
     setReadyLive(true);
-    let isStartedLive: number;
     let count = 0;
     function startAtLiveTime(time) {
       const date = new Date();
@@ -261,16 +280,33 @@ function RecordRoom() {
         );
         setStartLiveTime(startTimeNumber - currentTimeNumber);
       }
-
-      if (startTime.h === h && startTime.m === m && startTime.s < s) {
+      console.log(startTime, h, m, s);
+      if (
+        (startTime.h === h && startTime.m === m && startTime.s < s) ||
+        (startTime.h < h && startTime.m < m && startTime.s !== s)
+      ) {
         cancelAnimationFrame(isStartedLive);
-        start();
+        connectSocket().then(() => {
+          start().catch((e) => {
+            socketDispatch({
+              type: LIVE_SOCKET_ACTION.OUT,
+              roomId: locate.state.roomId,
+            });
+            navigate("/");
+          });
+        });
       } else {
         isStartedLive = requestAnimationFrame(startAtLiveTime);
       }
       count++;
     }
     startAtLiveTime(0);
+  }
+
+  function handleSeekToLive() {
+    if (videoRef.current) {
+      videoRef.current.currentTime = streamPoint;
+    }
   }
 
   return (
@@ -288,41 +324,59 @@ function RecordRoom() {
           <Typography fontWeight={700}>
             Room Session: {locate.state.roomId}
           </Typography>
-          <Stack gap={1}>
-            <Box sx={{ flex: 1 }}>
-              <Typography fontSize={20} fontWeight={700} gutterBottom>
-                Current Video
-              </Typography>
-            </Box>
-            {/* <VideoJS
-              playerRef={currentVideoRef}
-              options={videoJsOptions}
-              onReady={handleCurrentPlayerReady}
-            /> */}
-            <CustomVideo videoRef={currentVideoRef} />
-          </Stack>
-          <Stack gap={1}>
-            <Box sx={{ flex: 1 }}>
-              <Typography fontSize={20} fontWeight={700} gutterBottom>
-                Live Video
-              </Typography>
-              <MiniTip
-                badge='live'
-                view={room?.users?.length || 0}
-                color={"error"}
-              />
-            </Box>
-            <CustomVideo videoRef={videoRef} />
-            {/* <VideoJS
+          <Stack
+            gap={3}
+            sx={{
+              position: "relative",
+            }}>
+            <Stack gap={1} sx={{ width: 300 }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography fontSize={20} fontWeight={700}>
+                  Current Video
+                </Typography>
+              </Box>
+              <CustomVideo videoRef={currentVideoRef} />
+            </Stack>
+            <Stack gap={1} sx={{ width: 500, position: "relative" }}>
+              <Stack direction='row' alignItems='center' sx={{ flex: 1 }}>
+                <Typography fontSize={20} fontWeight={700}>
+                  Live Video
+                </Typography>
+                <MiniTip
+                  badge='live'
+                  view={room?.users?.length || 0}
+                  color={"error"}
+                />
+              </Stack>
+              <CustomVideo videoRef={videoRef} />
+
+              {isLiveStart && (
+                <Box
+                  sx={{ position: "absolute", top: 0, right: 10, zIndex: 100 }}>
+                  {isLive ? (
+                    <Chip label='LIVE' color='error' size='small' />
+                  ) : (
+                    <Chip
+                      component={Button}
+                      onClick={handleSeekToLive}
+                      color='info'
+                      label={"실시간 보기"}
+                      size='small'
+                    />
+                  )}
+                </Box>
+              )}
+              {/* <VideoJS
               playerRef={playerRef}
               options={videoJsOptions}
               onReady={handlePlayerReady}
               mediaSource={mediaSource}
             /> */}
+            </Stack>
           </Stack>
         </Stack>
       </Stack>
-      {isLiveStart && (
+      {isLiveStart ? (
         <Stack
           sx={{
             flex: 0.5,
@@ -359,8 +413,7 @@ function RecordRoom() {
             <Chattings />
           </Box>
         </Stack>
-      )}
-      {!isLiveStart && (
+      ) : (
         <Stack
           sx={{
             flex: 0.5,
@@ -371,10 +424,11 @@ function RecordRoom() {
               라이브 송출을 위해 시작 시간과 룸 제목을 설정해주세요!
             </Alert>
           </Box>
-          <Box sx={{ flex: 1 }}>
+          <Stack gap={1} sx={{ flex: 1 }}>
             <Typography>라이브 예정 시간</Typography>
             <Stack
               direction='row'
+              gap={1}
               sx={{
                 ["& .MuiInputBase-root"]: {
                   backgroundColor: "#ffffffa6",
@@ -435,16 +489,26 @@ function RecordRoom() {
                   </MenuItem>
                 ))}
               </Select>
+              <Button
+                variant='contained'
+                color='primary'
+                onClick={startLive}
+                disabled={readyLive}>
+                <PhotoCameraFrontIcon
+                  sx={{
+                    fontSize: (theme) => theme.typography.pxToRem(24),
+                  }}
+                />
+                라이브 시작
+              </Button>
             </Stack>
-            <Button onClick={startLive} disabled={readyLive}>
-              라이브 시작
-            </Button>
             {readyLive && (
               <Typography>
-                라이브 방송 송출까지 남은 시간 -{startLiveTime}초
+                라이브 방송 송출까지 남은 시간{" "}
+                <strong>{startLiveTime}초</strong>
               </Typography>
             )}
-          </Box>
+          </Stack>
         </Stack>
       )}
     </Stack>

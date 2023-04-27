@@ -12,9 +12,9 @@ function LiveLayout() {
     }
   }, []);
   return (
-    <Stack>
+    <Stack sx={{ height: "inherit" }}>
       {isLiveRoom && <LiveHeader />}
-      <Box sx={{ backgroundColor: "#121212", color: "#ffffff" }}>
+      <Box sx={{ backgroundColor: "#121212", color: "#ffffff", flex: 1 }}>
         <Outlet />
       </Box>
     </Stack>

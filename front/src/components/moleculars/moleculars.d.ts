@@ -17,7 +17,18 @@ declare interface EnterAnswerType {
   title?: string | React.ReactElement | React.ReactElement[];
   content?: string | React.ReactElement | React.ReactElement[];
   to?: string;
+  roomTitle?: string;
   roomId?: string;
+  color?:
+    | "inherit"
+    | "primary"
+    | "secondary"
+    | "success"
+    | "error"
+    | "info"
+    | "warning"
+    | undefined;
+  variant?: "text" | "outlined" | "contained" | undefined;
 }
 
 declare interface EnterDialogType extends EnterAnswerType {

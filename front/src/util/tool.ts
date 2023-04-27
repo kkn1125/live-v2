@@ -20,13 +20,25 @@ const dev = function (this: Console) {
 
 const convertUrlString = (str: string) =>
   str.replace(
-    /\[(.+)\]\((http(s)?\:\/\/([A-Za-z\-\_\.]+)*(\/[A-Za-z\-\_\.]*)*)\)/g,
-    ($$, $1, $2) => {
-      if ($1 && $2) {
-        return `<a href="${$2}" target="_blank" title="${$1}">${$1}</a>`;
+    /(http(s)?\:\/\/([A-Za-z\-\_\.]+)*(\/[A-Za-z\-\_\.]*)*)/g,
+    ($$, $1) => {
+      if ($1) {
+        return `<a class="link-highlight" href="${$1}" target="_blank" title="${encodeURIComponent(
+          $$
+        )}">${$$}</a>`;
       }
       return $$;
     }
   );
+// const convertUrlString = (str: string) =>
+//   str.replace(
+//     /\[(.+)\]\((http(s)?\:\/\/([A-Za-z\-\_\.]+)*(\/[A-Za-z\-\_\.]*)*)\)/g,
+//     ($$, $1, $2) => {
+//       if ($1 && $2) {
+//         return `<a href="${$2}" target="_blank" title="${$1}">${$1}</a>`;
+//       }
+//       return $$;
+//     }
+//   );
 
 export { dev, convertUrlString };

@@ -110,4 +110,8 @@ export default class Room {
     const decode = new Uint8Array(stream).toString();
     return decode;
   }
+
+  isEmpty() {
+    return this.users.length === 0;
+  }
 }

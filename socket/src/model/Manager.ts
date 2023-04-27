@@ -1,11 +1,13 @@
 import Room, { RoomUpdateType } from "./Room";
+import RoomManager from "./Room.Manager";
 import User from "./User";
-
-
+import UserManager from "./User.Manager";
 
 export default class Manager {
-  users: User[] = [];
-  rooms: Room[] = [];
+  // users: User[] = [];
+  // rooms: Room[] = [];
+  users: UserManager = new UserManager();
+  rooms: RoomManager = new RoomManager();
 
   constructor() {}
 
@@ -15,11 +17,11 @@ export default class Manager {
   }
 
   findRoom(roomId: string) {
-    const room = this.rooms.find((room) => room.id === roomId);
+    const room = this.rooms.findOne(roomId);
     return room;
   }
 
-  createRoom(id: string) {
+  insertRoom(id: string) {
     const room = new Room(id);
     this.rooms.push(room);
     return room;
@@ -35,11 +37,11 @@ export default class Manager {
     return room;
   }
 
-  deleteRoom(roomId: string) {
-    const roomIndex = this.rooms.findIndex((room) => room.id === roomId);
-    const deletedRoom = this.rooms.splice(roomIndex, 1)[0];
-    return deletedRoom;
-  }
+  // deleteRoom(roomId: string) {
+  //   const roomIndex = this.rooms.findOneIndex(roomId);
+  //   const deletedRoom = this.rooms.splice(roomIndex, 1)[0];
+  //   return deletedRoom;
+  // }
 
   findRoomUserIn(userId: string) {
     const room = this.rooms.find((room) => room.findUser(userId));
@@ -78,20 +80,21 @@ export default class Manager {
       console.log(userId, " out room success, room is:", room);
     }
     if (room.users.length === 0) {
-      this.deleteRoom(roomId);
+      this.rooms.delete(roomId);
       console.log("room is empty, this room delete!");
     }
     return room;
   }
 
-  clearEmptyRoom() {
-    this.rooms = this.rooms.filter((room) => {
-      if (room.users.length === 0) {
-        console.log("empty room delete", room);
-        return false;
-      }
-      return true;
-    });
+  clearEmpty() {
+    this.rooms.clearEmpty();
+  }
+
+  initialize() {
+    // this.rooms = [];
+    // this.users = [];
+    this.rooms.initialize();
+    this.users.initialize();
   }
 }
 

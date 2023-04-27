@@ -16,6 +16,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@babel/preset-env": "^7.21.4",
+    "@babel/preset-typescript": "^7.21.4",
     "@types/ffmpeg": "^1.0.4",
     "@types/fluent-ffmpeg": "^2.1.21",
     "@types/jest": "^29.5.1",

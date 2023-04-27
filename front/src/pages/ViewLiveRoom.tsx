@@ -1,11 +1,8 @@
-import { Box, Button, CircularProgress, Typography } from "@mui/material";
-import React, { useContext, useEffect, useRef, useState } from "react";
+import { Box, Button, Chip, CircularProgress, Typography } from "@mui/material";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import videojs from "video.js";
 import Player from "video.js/dist/types/player";
 import CustomVideo from "../components/moleculars/CustomVideo";
-import VideoJS from "../components/moleculars/VideoJS";
-import Chat from "../components/organisms/Chat";
 import LiveCommerceLayout from "../components/templates/LiveCommerceLayout";
 import {
   LiveSocketContext,
@@ -22,10 +19,7 @@ let chunkFetchStreamLoop: NodeJS.Timer;
 let chunkDownloadStreamLoop: NodeJS.Timer;
 let streamPoint = 0;
 
-let flag = false;
-
 function ViewLiveRoom() {
-  // const videoPlay = useRef<(value: any) => void>(() => {});
   const videoRef = useRef<HTMLVideoElement>();
   const locate = useLocation();
   const [isLive, setIsLive] = useState(false);
@@ -35,51 +29,15 @@ function ViewLiveRoom() {
   const navigate = useNavigate();
   const playerRef = useRef<Player | null>(null);
   const [loading, setLoading] = useState(true);
-  const [videoJsOptions, setVideoJsOptions] = useState({
-    autoplay: true,
-    controls: true,
-    responsive: true,
-    fluid: true,
-    liveui: true,
-    liveTracker: {
-      liveTolerance: 5, // n초 미만일 때 liveui 숨김 (라이브 표시 관련)
-      trackingThreshold: 10, // n초 이상 seek bar와 벌어질 때 모든 항목 live로 간주 (seek bar 관련)
-    },
-    // sources: [
-    //   {
-    //     src: URL.createObjectURL((mediaSource = new MediaSource())),
-    //     type: CODEC,
-    //   },
-    // ],
-  });
   const [percentage, setPercentage] = useState(0);
-
-  const handlePlayerReady = (player) => {
-    playerRef.current = player;
-
-    // You can handle player events here, for example:
-    player.on("waiting", () => {
-      videojs.log("player is waiting");
-    });
-
-    player.on("dispose", () => {
-      videojs.log("player will dispose");
-    });
-  };
+  const [isSeekable, setIsSeekable] = useState(false);
 
   useEffect(() => {
-    // if (playerRef.current) {
-    //   setTimeout(() => {
-    //   }, 100);
-    // }
-
     socket.ifActivated((activate) => {
-      console.log(9123123);
       const video = videoRef.current as HTMLVideoElement;
       video.src = URL.createObjectURL(mediaSource);
 
       mediaSource.onsourceopen = (e) => {
-        console.log(123123);
         videoBuffer = mediaSource.addSourceBuffer(CODEC);
       };
 
@@ -88,51 +46,54 @@ function ViewLiveRoom() {
           socket.sendBinary(SIGNAL.STREAM, "fetch", {
             chunkIndex: countDownloadChunk,
           });
-          // setIsLive(() =>
-          //   // @ts-ignore
-          //   playerRef.current?.liveTracker.isLive()
-          // );
         }, 50);
-        // };
-        // };
       }, 100);
 
       socket.on(SIGNAL.STREAM, (type, origin, data) => {
         // (videoBuffer as SourceBuffer).onupdateend = () => {
-        const stream = data.result.stream;
-        streamPoint = Number(data.result.streamPoint);
-        if (stream && streamPoint !== countDownloadChunk) {
-          const streamBuffer = new Uint8Array(
-            stream.split(",").map((s) => Number(s))
-          ).buffer;
-          try {
-            streams.push(streamBuffer);
+        if (data.action === "fetch") {
+          const stream = data.result.stream;
+          streamPoint = Number(data.result.streamPoint);
+          if (stream && streamPoint !== countDownloadChunk) {
+            const streamBuffer = new Uint8Array(
+              stream.split(",").map((s) => Number(s))
+            ).buffer;
+            try {
+              streams.push(streamBuffer);
 
-            if (!videoBuffer?.updating) {
-              videoBuffer?.appendBuffer(streamBuffer);
-              console.log(`loaded ${countDownloadChunk} stream`);
-              console.log(streamPoint, countDownloadChunk);
-              setPercentage((countDownloadChunk / streamPoint) * 100);
-              if (streamPoint > countDownloadChunk + 5) {
-                console.log("no live");
-                handleSeekToLive();
-                setLoading(() => true);
-              } else {
-                setLoading(() => false);
+              if (!videoBuffer?.updating) {
+                videoBuffer?.appendBuffer(streamBuffer);
+                // console.log(`loaded ${countDownloadChunk} stream`);
+                // console.log(streamPoint, countDownloadChunk);
+                setPercentage((countDownloadChunk / streamPoint) * 100);
+                if (streamPoint > countDownloadChunk + 5) {
+                  console.log("no live");
+                  handleSeekToLive();
+                  setLoading(() => true);
+                } else {
+                  setLoading(() => false);
+                }
+                // console.log(videoRef.current?.currentTime);
+                if (
+                  (videoRef.current?.currentTime || 0) + 5 <
+                  streamPoint / 2
+                ) {
+                  setIsLive(false);
+                } else {
+                  setIsLive(true);
+                }
+                countDownloadChunk++;
               }
-              if (countDownloadChunk + 5 < streamPoint) {
-                setIsLive(false);
-              }
-              countDownloadChunk++;
+            } catch (e) {
+              console.log(e);
             }
-          } catch (e) {
-            console.log(e);
-            // socketDispatch({
-            //   type: LIVE_SOCKET_ACTION.OUT,
-            //   roomId: locate.state.roomId,
-            // });
-            // navigate("/");
           }
+        }
+      });
+
+      socket.on(SIGNAL.ROOM, (type, origin, data) => {
+        if (data.action === "update/join" || data.action === "update/out") {
+          setRoom((room) => data.result.room);
         }
       });
 
@@ -187,6 +148,8 @@ function ViewLiveRoom() {
       clearInterval(chunkFetchStreamLoop);
       clearInterval(chunkDownloadStreamLoop);
       videoBuffer = undefined;
+      countDownloadChunk = 0;
+      streamPoint = 0;
       socketDispatch({
         type: LIVE_SOCKET_ACTION.OUT,
         roomId: locate.state?.roomId,
@@ -195,38 +158,9 @@ function ViewLiveRoom() {
   }, [mediaSource]);
 
   function handleSeekToLive() {
-    // @ts-ignore
-    // playerRef.current.liveTracker.seekToLiveEdge_();
     if (videoRef.current) {
-      videoRef.current.currentTime = countDownloadChunk - 1;
+      videoRef.current.currentTime = streamPoint;
     }
-  }
-
-  // function isVideoPlay() {
-  //   return new Promise((resolve) => ((videoPlay.current as any) = resolve));
-  // }
-
-  {
-    /* <Box
-        sx={{
-          width: 500,
-        }}>
-        {!isLive && (
-          <Button
-            variant='contained'
-            color='error'
-            size='small'
-            sx={{
-              position: "absolute",
-              top: 100,
-              right: 10,
-            }}
-            onClick={handleSeekToLive}>
-            실시간 보기
-          </Button>
-        )}
-      </Box>
-      <Chat /> */
   }
 
   return (
@@ -254,9 +188,12 @@ function ViewLiveRoom() {
           <CircularProgress color='inherit' />
         </Box>
       )}
-      {isLive && "live"}
+
       <LiveCommerceLayout
         room={room}
+        loading={loading}
+        isLive={isLive}
+        handleSeekToLive={handleSeekToLive}
         video={
           <Box
             sx={{
@@ -265,12 +202,6 @@ function ViewLiveRoom() {
             }}>
             <CustomVideo videoRef={videoRef} />
           </Box>
-          // <VideoJS
-          //   playerRef={playerRef}
-          //   options={videoJsOptions}
-          //   onReady={handlePlayerReady}
-          //   mediaSource={mediaSource}
-          // />
         }
       />
     </Box>

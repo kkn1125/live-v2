@@ -127,6 +127,12 @@ export default class LiveSocket {
     this.socket?.close();
   }
 
+  deleteRoom(roomId: string) {
+    this.sendBinary(SIGNAL.ROOM, "delete", {
+      roomId,
+    });
+  }
+
   /* intialize listeners */
   initialize() {
     /* intialize intercepter listeners */
@@ -203,15 +209,19 @@ export default class LiveSocket {
     c?: DataType
   ): void {
     if (c) {
-      (this.events[a].listeners as DataLiveSocketEventListenerType[]).forEach(
-        (cb) => cb.call(this, a, b, c)
-      );
-      this.events[a].promise.forEach((prm) => prm(c));
+      if (this.events[a]) {
+        (this.events[a].listeners as DataLiveSocketEventListenerType[]).forEach(
+          (cb) => cb.call(this, a, b, c)
+        );
+        this.events[a].promise.forEach((prm) => prm(c));
+      }
     } else {
-      (this.events[a].listeners as BasicLiveSocketEventListenerType[]).forEach(
-        (cb) => cb.call(this, a, b)
-      );
-      this.events[a].promise.forEach((prm) => prm(b));
+      if (this.events[a]) {
+        (
+          this.events[a].listeners as BasicLiveSocketEventListenerType[]
+        ).forEach((cb) => cb.call(this, a, b));
+        this.events[a].promise.forEach((prm) => prm(b));
+      }
     }
   }
 

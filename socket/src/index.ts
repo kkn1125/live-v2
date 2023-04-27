@@ -149,5 +149,5 @@ const app = uWS
 setInterval(() => {
   // console.log("manager", JSON.stringify(manager, null, 2));
   console.log("manager", manager);
-  manager.clearEmptyRoom();
+  manager.clearEmpty();
 }, 5000);

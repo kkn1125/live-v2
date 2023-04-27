@@ -11,13 +11,18 @@ function EnterAnswer({
   content,
   to,
   roomId = "",
+  roomTitle = "",
+  color,
+  variant,
 }: EnterAnswerType) {
   const [open, setOpen] = useState(false);
   const [id, setRoomId] = useState("");
+  const [customRoomTitle, setRoomTitle] = useState("");
 
   const handleClickOpen = () => {
     setOpen(true);
     setRoomId(roomId || v4());
+    setRoomTitle(roomTitle);
   };
 
   function handleClose() {
@@ -25,7 +30,9 @@ function EnterAnswer({
   }
   return (
     <Box>
-      <EnterButton onClick={handleClickOpen}>{answer[type]}</EnterButton>
+      <EnterButton onClick={handleClickOpen} color={color} variant={variant}>
+        {answer[type]}
+      </EnterButton>
       <EnterDialog
         type={type}
         open={open}
@@ -34,6 +41,7 @@ function EnterAnswer({
         content={content}
         to={to + (roomId ? "/" + id : "")}
         roomId={id}
+        roomTitle={customRoomTitle}
       />
     </Box>
   );

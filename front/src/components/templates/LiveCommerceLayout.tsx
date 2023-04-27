@@ -1,4 +1,4 @@
-import { Stack, Box, Typography, keyframes } from "@mui/material";
+import { Stack, Box, Typography, keyframes, Button, Chip } from "@mui/material";
 import Toolbar from "@mui/material/Toolbar";
 import axios from "axios";
 import { MouseEvent, useState, useRef, useEffect, useContext } from "react";
@@ -23,6 +23,9 @@ type URLs = string[];
 interface LiveCommerceOptionTypes {
   room?: any;
   video?: React.ReactElement;
+  loading?: boolean;
+  isLive?: boolean;
+  handleSeekToLive: () => void;
 }
 
 const LIVE_SIZE = {
@@ -37,7 +40,13 @@ const LIVE_SIZE = {
   MIN_HEIGHT: 640,
 };
 
-function LiveCommerceLayout({ video, room }: LiveCommerceOptionTypes) {
+function LiveCommerceLayout({
+  video,
+  room,
+  loading,
+  isLive,
+  handleSeekToLive,
+}: LiveCommerceOptionTypes) {
   const socket = useContext(LiveSocketContext);
   const socketDispatch = useContext(LiveSocketDispatchContext);
   const locate = useLocation();
@@ -87,6 +96,8 @@ function LiveCommerceLayout({ video, room }: LiveCommerceOptionTypes) {
         } else {
           setLink(room.link);
         }
+      } else if (data.action === "delete") {
+        setIsWrongPath(() => true);
       } else if (data.action === "send/link") {
         setLink((link) => data.result.link);
       }
@@ -108,10 +119,6 @@ function LiveCommerceLayout({ video, room }: LiveCommerceOptionTypes) {
       setIsWrongPath(() => true);
     }
   }, []);
-
-  function toggleChatting() {
-    setToggleChat(!toggleChat);
-  }
 
   return isWrongPath ? (
     <>
@@ -145,6 +152,21 @@ function LiveCommerceLayout({ video, room }: LiveCommerceOptionTypes) {
           minHeight: LIVE_SIZE.MIN_HEIGHT,
           backgroundColor: "#000000",
         }}>
+        <Box sx={{ position: "absolute", top: 135, right: 10, zIndex: 100 }}>
+          {!loading &&
+            (isLive ? (
+              <Chip label='LIVE' color='error' size='small' />
+            ) : (
+              <Chip
+                component={Button}
+                onClick={handleSeekToLive}
+                color='info'
+                label={"실시간 보기"}
+                size='small'
+              />
+            ))}
+        </Box>
+
         <LiveToolBar />
         <SlideTitle
           size={size}

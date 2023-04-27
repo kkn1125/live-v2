@@ -16,10 +16,56 @@ export default function EnterDialog({
   title,
   content,
   to,
+  roomTitle,
   roomId,
 }: EnterDialogType) {
+  const titleRef = useRef<HTMLInputElement>(null);
   const nicknameRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  function sendRoomSettingData() {
+    const data = {
+      title: titleRef.current?.value,
+      nickname: nicknameRef.current?.value,
+    };
+
+    if (!data.title) {
+      alert("제목을 입력해주세요.");
+      setTimeout(() => {
+        titleRef.current?.focus();
+      }, 10);
+      return;
+    }
+    if (!data.nickname) {
+      alert("닉네임을 입력해주세요.");
+      setTimeout(() => {
+        nicknameRef.current?.focus();
+      }, 10);
+      return;
+    }
+
+    if (data.title && data.nickname) {
+      to &&
+        navigate(to, {
+          state: {
+            roomId,
+            ...data,
+          },
+        });
+    }
+    titleRef.current && (titleRef.current.value = "");
+    nicknameRef.current && (nicknameRef.current.value = "");
+  }
+
+  function handleEnter(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      handleClose();
+      sendRoomSettingData();
+    }
+    if (e.key === "Escape") {
+      handleClose();
+    }
+  }
 
   return (
     <Dialog
@@ -32,55 +78,50 @@ export default function EnterDialog({
       <DialogTitle id='alert-dialog-title'>{title}</DialogTitle>
       <DialogContent>{content}</DialogContent>
       <DialogContent>
-        <Stack>
-          <Typography
-            fontSize={18}
-            fontWeight={700}
-            sx={{
-              textTransform: "uppercase",
-            }}>
-            room id
-          </Typography>
-          <TextField size='small' value={roomId} disabled />
-        </Stack>
+        <Typography
+          fontSize={18}
+          fontWeight={700}
+          sx={{
+            textTransform: "uppercase",
+          }}>
+          room id
+        </Typography>
+        <TextField size='small' value={roomId} disabled={Boolean(roomId)} />
+      </DialogContent>
+
+      <DialogContent>
+        <Typography
+          fontSize={18}
+          fontWeight={700}
+          sx={{
+            textTransform: "uppercase",
+          }}>
+          title
+        </Typography>
+        <TextField
+          inputRef={titleRef}
+          {...(roomTitle && { value: roomTitle })}
+          disabled={Boolean(roomTitle)}
+          size='small'
+          onKeyDown={handleEnter}
+        />
       </DialogContent>
       <DialogContent>
-        <Stack>
-          <Typography
-            fontSize={18}
-            fontWeight={700}
-            sx={{
-              textTransform: "uppercase",
-            }}>
-            nickname
-          </Typography>
-          <TextField
-            inputRef={nicknameRef}
-            size='small'
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleClose();
-                if (nicknameRef.current) {
-                  const value = nicknameRef.current.value;
-                  if (value) {
-                    to &&
-                      navigate(to, {
-                        state: {
-                          roomId,
-                          nickname: value,
-                        },
-                      });
-                    nicknameRef.current.value = "";
-                  }
-                }
-              }
-              if (e.key === "Escape") {
-                handleClose();
-              }
-            }}
-          />
-        </Stack>
+        <Typography
+          fontSize={18}
+          fontWeight={700}
+          sx={{
+            textTransform: "uppercase",
+          }}>
+          nickname
+        </Typography>
+        <TextField
+          inputRef={nicknameRef}
+          size='small'
+          onKeyDown={handleEnter}
+        />
       </DialogContent>
+
       <DialogActions>
         <Button
           onClick={() => {
@@ -91,19 +132,7 @@ export default function EnterDialog({
         <Button
           onClick={() => {
             handleClose();
-            if (nicknameRef.current) {
-              const value = nicknameRef.current.value;
-              if (value) {
-                to &&
-                  navigate(to, {
-                    state: {
-                      roomId,
-                      nickname: value,
-                    },
-                  });
-                nicknameRef.current.value = "";
-              }
-            }
+            sendRoomSettingData();
           }}
           autoFocus>
           확인

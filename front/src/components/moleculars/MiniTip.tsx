@@ -1,6 +1,7 @@
 import { Box, Chip, Stack, Typography } from "@mui/material";
 import { Theme } from "@mui/material/styles/createTheme";
 import React from "react";
+import PeopleIcon from "@mui/icons-material/People";
 
 function MiniTip({
   badge,
@@ -12,11 +13,9 @@ function MiniTip({
   color?: "primary" | "secondary" | "error" | "warning" | "info";
 }) {
   return (
-    <Box sx={{ ml: 2, mt: 2 }}>
+    <Box sx={{ ml: 2 }}>
       <Stack
         direction='row'
-        gap={0.5}
-        alignItems='center'
         sx={{
           position: "relative",
           display: "inline-flex",
@@ -25,21 +24,34 @@ function MiniTip({
           borderRadius: 1,
           overflow: "hidden",
         }}>
-        <Typography
-          fontWeight={700}
-          textTransform={"uppercase"}
-          fontSize={(theme) => theme.typography.pxToRem(12)}
+        <Stack
+          direction='row'
+          alignItems='center'
           sx={{
-            backgroundColor: (theme) => theme.palette[color].main,
-            px: 0.8,
-            py: 0.1,
+            backgroundColor: (theme) => theme.palette.error.main,
+            px: 0.6,
           }}>
-          {badge}
-        </Typography>
+          <Typography
+            component='div'
+            fontWeight={700}
+            textTransform={"uppercase"}
+            fontSize={(theme) => theme.typography.pxToRem(12)}>
+            {badge}
+          </Typography>
+        </Stack>
         <Typography
+          component={Stack}
+          direction='row'
+          alignItems='center'
+          gap={1}
           fontSize={(theme) => theme.typography.pxToRem(12)}
           sx={{ flex: 1, px: 0.8, py: 0.2 }}>
-          ▷ {view.toLocaleString("ko")}
+          <PeopleIcon
+            sx={{
+              fontSize: (theme) => theme.typography.pxToRem(16),
+            }}
+          />{" "}
+          {view.toLocaleString("ko")}
         </Typography>
       </Stack>
     </Box>
