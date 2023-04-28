@@ -29,6 +29,7 @@ declare interface EnterAnswerType {
     | "warning"
     | undefined;
   variant?: "text" | "outlined" | "contained" | undefined;
+  children?: React.ReactElement | React.ReactElement[] | string | undefined;
 }
 
 declare interface EnterDialogType extends EnterAnswerType {

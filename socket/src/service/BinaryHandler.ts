@@ -3,8 +3,12 @@ import uWS, { TemplatedApp } from "uWebSockets.js";
 import { manager } from "../model/Manager";
 import PublishManager from "../model/Publisher";
 import User from "../model/User";
+import fs from "fs";
+import path from "path";
+import { TEMP_PATH } from "../util/tool";
 
 const publisher = new PublishManager(true);
+let chunkUploadCount = 0;
 
 export default function binaryHandler(
   app: TemplatedApp,
@@ -30,33 +34,76 @@ export default function binaryHandler(
         console.log("🔗🔗🔗🔗🚀🚀🚀", base);
         const room = manager.rooms.findOneUserIn((ws as any).userId);
         const link = base.data.link;
+        const desc = base.data.desc;
         room.setLink(link);
-        publisher.manager.sendMe(ws, { ...base }, { room, link });
-        publisher.manager.sendOther(ws, room.id, { ...base }, { room, link });
+        room.setLinkDesc(desc);
+        publisher.manager.sendMe(ws, { ...base }, { room, link, desc });
+        publisher.manager.sendOther(
+          ws,
+          room.id,
+          { ...base },
+          { room, link, desc }
+        );
       } else if (base.action === "fetch") {
         const rooms = manager.rooms.findAll();
         publisher.manager.sendMe(ws, base, { rooms });
+      } else if (base.action === "like") {
+        const user = manager.users.findOne((ws as any).userId);
+        const room = manager.rooms.findOneUserIn(user.id);
+        const likes = room.addLike(user.id);
+        const wasLiked = user.addLikeRooms(room.id);
+        const likeCounter = room.likes.length;
+        publisher.manager.publishBinaryTo(app, ws, room.id, base, {
+          room,
+          likeCounter,
+          likes,
+          wasLiked,
+        });
       } else if (base.action === "find") {
         const room = manager.rooms.findOne(base.data.roomId);
         publisher.manager.sendMe(ws, base, { room });
       } else if (base.action === "create") {
         const room = manager.rooms.insert(base.data.roomId);
+        const user = manager.users.findOne((ws as any).userId);
         ws.subscribe(room.id);
+
+        if (base.data.roomTitle) {
+          room.setTitle(base.data.roomTitle);
+        }
+
+        room.join(user);
+
         const rooms = manager.rooms.findAll();
+
+        fs.mkdir(TEMP_PATH(room), { recursive: true }, function (err) {
+          const wrtStream = fs.createWriteStream(
+            TEMP_PATH(room) + "/readme.md"
+          );
+
+          wrtStream.write("# 테스트 영상");
+          wrtStream.write("\n\n");
+          wrtStream.write(`## ${room.id}`);
+          wrtStream.write("\n\n");
+          wrtStream.write(`admin: ${(ws as any).userId}`);
+          wrtStream.write("\n");
+          wrtStream.write(
+            `created_at: ${new Date(room.createdAt).toLocaleString("ko")}`
+          );
+
+          wrtStream.end();
+        });
+
         publisher.manager.publish(app, ws, base, { rooms });
       } else if (base.action === "update") {
         const room = manager.rooms.update(base.data.roomId, base.data.roomData);
         const rooms = manager.rooms.findAll();
-        console.log(base.data.roomId);
-        console.log(base.data.roomData);
-        console.log(room);
-        console.log(rooms);
         publisher.manager.publish(app, ws, base, { room, rooms });
       } else if (base.action === "update/join") {
         const room = manager.rooms.findOne(base.data.roomId);
         if (room) {
           ws.subscribe(room.id);
-          room.join(new User((ws as any).userId, base.data.nickname));
+          const user = manager.users.findOne((ws as any).userId);
+          room.join(user);
           publisher.manager.publishBinaryTo(app, ws, room.id, base, { room });
         }
       } else if (base.action === "update/out") {
@@ -83,8 +130,9 @@ export default function binaryHandler(
       } else if (base.action === "find") {
         publisher.manager.sendMe(ws, base);
       } else if (base.action === "create") {
+        manager.users.insert(base.data.userId);
         const user = new User((ws as any).userId);
-        const room = manager.findRoom(base.data.roomId);
+        const room = manager.rooms.findOne(base.data.roomId);
         ws.subscribe(room.id);
         room.join(new User((ws as any).userId));
         publisher.manager.sendMe(ws, base, { room, user });
@@ -126,11 +174,19 @@ export default function binaryHandler(
       if (base.action === "send") {
         const room = manager.rooms.findOneUserIn((ws as any).userId);
         if (room) {
+          /* stream */
+          const stream = base.data.stream;
           /* add stream */
           room.addStream(base.data.stream);
-          /* add stream */
+          
+          const filename = room.id + "-" + chunkUploadCount + ".webm";
+          fs.writeFileSync(TEMP_PATH(room, filename), stream);
+          chunkUploadCount++;
 
-          publisher.manager.sendMe(ws, base);
+          publisher.manager.sendMe(ws, base, {
+            stream,
+            streamPoint: room.streams.length,
+          });
         }
       } else if (base.action === "fetch") {
         const room = manager.rooms.findOneUserIn((ws as any).userId);

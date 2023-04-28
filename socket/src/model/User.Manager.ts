@@ -54,9 +54,9 @@ export default class UserManager
   }
 
   insert(id: string): User {
-    const room = new User(id);
-    this.push(room);
-    return room;
+    const user = new User(id);
+    this.push(user);
+    return user;
   }
 
   update(id: string, newUser: User): User {

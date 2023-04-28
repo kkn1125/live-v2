@@ -13,7 +13,7 @@ import Tooltip from "@mui/material/Tooltip";
 import MenuItem from "@mui/material/MenuItem";
 import AdbIcon from "@mui/icons-material/Adb";
 import { useState, MouseEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const page = (path: string, name: string) => ({ path, name });
 const setting = (name: string, cb: Function) => ({ name, cb });
@@ -49,23 +49,9 @@ export default function Header() {
     <AppBar position='static'>
       <Container maxWidth='xl'>
         <Toolbar disableGutters>
-          <AdbIcon sx={{ display: { xs: "none", md: "flex" }, mr: 1 }} />
-          <Typography
-            variant='h6'
-            noWrap
-            component='a'
-            href='/'
-            sx={{
-              mr: 2,
-              display: { xs: "none", md: "flex" },
-              fontFamily: "monospace",
-              fontWeight: 700,
-              letterSpacing: ".3rem",
-              color: "inherit",
-              textDecoration: "none",
-            }}>
-            LOGO
-          </Typography>
+          <Box component={Link} to='/'>
+            <Box component='img' src='/images/ander_white.png' width={120} />
+          </Box>
 
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import BottomDrawer from "./BottomDrawer";
 
-const sample = `🌸 [솔가] 최대 70% 할인 🌸`;
+const sample = `🌸 [솔가] 최대 70% 할인 🌸 봄맞이 한정 판매, 데일리 마스크!`;
 
 const FONT_SIZE = 18;
 
@@ -27,10 +27,11 @@ function SlideTitle({
     if (baseWidthRef.current && responsiveWidthRef.current) {
       const baseWidth = baseWidthRef.current.clientWidth;
       const responsiveWidth = responsiveWidthRef.current.clientWidth;
+      console.log(baseWidth, responsiveWidth);
       if (
         baseWidth > 0 &&
         responsiveWidth > 0 &&
-        baseWidth !== responsiveWidth
+        baseWidth < responsiveWidth * 2
       ) {
         // console.log(baseWidth);
         // console.log(responsiveWidth);
@@ -63,7 +64,7 @@ function SlideTitle({
 
   useEffect(() => {
     detectSameWidth();
-  }, []);
+  }, [innerWidth, innerHeight]);
 
   return (
     <Box
@@ -101,23 +102,29 @@ function SlideTitle({
         handleOpen={toggleDrawer}>
         <Box
           id='slide-text'
-          component={"a"}
-          href='#'
+          component={Link}
+          to=''
           sx={{
             color: "inherit",
-            display: "inline-block",
+            display: "block",
             whiteSpace: "nowrap",
           }}
           onClick={toggleDrawer(true)}>
           <Typography
+            component='span'
             ref={responsiveWidthRef}
             fontSize={FONT_SIZE}
-            sx={{ px: 2 }}>
+            sx={{ px: 2, display: "inline-block" }}>
             {title}
           </Typography>
-          <Typography fontSize={FONT_SIZE} sx={{ px: 2 }}>
-            {title}
-          </Typography>
+          {isOverflowTitle && (
+            <Typography
+              component='span'
+              fontSize={FONT_SIZE}
+              sx={{ px: 2, display: "inline-block" }}>
+              {title}
+            </Typography>
+          )}
         </Box>
       </BottomDrawer>
     </Box>

@@ -23,6 +23,9 @@ export default class Room {
   tags: string[] = [];
   streams: ArrayBuffer[] = [];
   link: string = "";
+  linkDesc: string = "";
+  likes: string[] = [];
+  views: number = 0;
 
   /* room users */
   admin?: User;
@@ -39,8 +42,26 @@ export default class Room {
     this.updatedAt = +new Date();
   }
 
+  setAdmin(user: User) {
+    if (this.admin) {
+      this.admin.role = "viewer";
+      console.log(
+        `admin이 변경되었습니다. ${this.admin.nickname} => ${user.nickname}`
+      );
+    }
+    this.admin = user;
+    user.setRole("admin");
+  }
+
   setLink(link: string) {
     this.link = link;
+  }
+  setLinkDesc(linkDesc: string) {
+    this.linkDesc = linkDesc;
+  }
+
+  setTitle(title: string) {
+    this.title = title;
   }
 
   findUser(userId: string) {
@@ -54,7 +75,7 @@ export default class Room {
 
   join(user: User) {
     user.involveRoomId = this.id;
-
+    console.log("insert user");
     if (this.users.length === 0) {
       user.role = "admin";
       this.admin = user;
@@ -113,5 +134,13 @@ export default class Room {
 
   isEmpty() {
     return this.users.length === 0;
+  }
+
+  addLike(userId: string) {
+    if (!this.likes.includes(userId)) {
+      this.likes.push(userId);
+      return true;
+    }
+    return false;
   }
 }

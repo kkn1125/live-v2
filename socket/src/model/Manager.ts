@@ -12,30 +12,30 @@ export default class Manager {
   constructor() {}
 
   /* room interface */
-  findRooms() {
-    return this.rooms;
-  }
+  // findRooms() {
+  //   return this.rooms;
+  // }
 
-  findRoom(roomId: string) {
-    const room = this.rooms.findOne(roomId);
-    return room;
-  }
+  // findRoom(roomId: string) {
+  //   const room = this.rooms.findOne(roomId);
+  //   return room;
+  // }
 
-  insertRoom(id: string) {
-    const room = new Room(id);
-    this.rooms.push(room);
-    return room;
-  }
+  // insertRoom(id: string) {
+  //   const room = new Room(id);
+  //   this.rooms.push(room);
+  //   return room;
+  // }
 
-  updateRoom(id: string, roomData: Room) {
-    const room = this.findRoom(id);
+  // updateRoom(id: string, roomData: Room) {
+  //   const room = this.findRoom(id);
 
-    if (room) {
-      room.updateRoom(roomData);
-    }
+  //   if (room) {
+  //     room.updateRoom(roomData);
+  //   }
 
-    return room;
-  }
+  //   return room;
+  // }
 
   // deleteRoom(roomId: string) {
   //   const roomIndex = this.rooms.findOneIndex(roomId);
@@ -62,7 +62,7 @@ export default class Manager {
   }
 
   join(roomId: string, user: User) {
-    const room = this.findRoom(roomId);
+    const room = this.rooms.findOne(roomId);
     if (room) {
       const hasUser = room.hasUser(user.id);
       if (!hasUser) {
@@ -74,7 +74,7 @@ export default class Manager {
   }
 
   out(roomId: string, userId: string) {
-    const room = this.findRoom(roomId);
+    const room = this.rooms.findOne(roomId);
     if (room) {
       room.out(userId);
       console.log(userId, " out room success, room is:", room);

@@ -18,7 +18,7 @@ export default function EnterDialog({
   to,
   roomTitle,
   roomId,
-}: EnterDialogType) {
+}: EnterDialogType & EnterAnswerType) {
   const titleRef = useRef<HTMLInputElement>(null);
   const nicknameRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();

@@ -9,6 +9,8 @@ export default class User {
   video: boolean = true;
   audio: boolean = true;
 
+  likeRooms: string[] = [];
+
   /* user log */
   createdAt: number;
   updatedAt: number;
@@ -33,5 +35,13 @@ export default class User {
 
   setRole(role: UserRole) {
     this.role = role;
+  }
+
+  addLikeRooms(roomId: string) {
+    if (!this.likeRooms.includes(roomId)) {
+      this.likeRooms.push(roomId);
+      return true;
+    }
+    return false;
   }
 }

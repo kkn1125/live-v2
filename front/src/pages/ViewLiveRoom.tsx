@@ -3,6 +3,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Player from "video.js/dist/types/player";
 import CustomVideo from "../components/moleculars/CustomVideo";
+import PopupModal from "../components/moleculars/PopupModal";
 import LiveCommerceLayout from "../components/templates/LiveCommerceLayout";
 import {
   LiveSocketContext,
@@ -10,7 +11,7 @@ import {
 } from "../context/LiveSocketProvider";
 import { CODEC, INTERCEPT, LIVE_SOCKET_ACTION, SIGNAL } from "../util/global";
 
-let mediaSource = new MediaSource();
+let mediaSource: MediaSource;
 let videoBuffer: SourceBuffer | undefined = undefined;
 let streams: ArrayBuffer[] = [];
 let countUploadChunk = 0;
@@ -31,8 +32,11 @@ function ViewLiveRoom() {
   const [loading, setLoading] = useState(true);
   const [percentage, setPercentage] = useState(0);
   const [isSeekable, setIsSeekable] = useState(false);
+  const [isWrongPath, setIsWrongPath] = useState(false);
 
   useEffect(() => {
+    mediaSource = new MediaSource();
+
     socket.ifActivated((activate) => {
       const video = videoRef.current as HTMLVideoElement;
       video.src = URL.createObjectURL(mediaSource);
@@ -61,10 +65,10 @@ function ViewLiveRoom() {
             try {
               streams.push(streamBuffer);
 
-              if (!videoBuffer?.updating) {
-                videoBuffer?.appendBuffer(streamBuffer);
-                // console.log(`loaded ${countDownloadChunk} stream`);
-                // console.log(streamPoint, countDownloadChunk);
+              if (videoBuffer && !videoBuffer?.updating) {
+                videoBuffer.appendBuffer(streamBuffer);
+                console.log(`loaded ${countDownloadChunk} stream`);
+                console.log(streamPoint, countDownloadChunk);
                 setPercentage((countDownloadChunk / streamPoint) * 100);
                 if (streamPoint > countDownloadChunk + 5) {
                   console.log("no live");
@@ -84,8 +88,13 @@ function ViewLiveRoom() {
                 }
                 countDownloadChunk++;
               }
-            } catch (e) {
+            } catch (e: any) {
+              console.log(e.status);
+              console.log(e.code);
+              console.log(e.message);
               console.log(e);
+              if (e.code === 11) {
+              }
             }
           }
         }
@@ -109,7 +118,20 @@ function ViewLiveRoom() {
         }
       });
 
+      socket.on(SIGNAL.ROOM, (type, origin, data) => {
+        if (data.action === "find") {
+          const room = data.result.room;
+          if (!room) {
+            setIsWrongPath(() => true);
+          }
+        } else if (data.action === "delete") {
+          setIsWrongPath(() => true);
+        }
+      });
+
       socket.on(INTERCEPT.ERROR, (type, origin) => {
+        alert("오류가 발생했습니다.");
+
         clearInterval(chunkFetchStreamLoop);
         clearInterval(chunkDownloadStreamLoop);
 
@@ -117,6 +139,8 @@ function ViewLiveRoom() {
           type: LIVE_SOCKET_ACTION.OUT,
           roomId: locate.state.roomId,
         });
+
+        setIsWrongPath(() => true);
       });
 
       socket.on(INTERCEPT.CLOSE, (type, origin) => {
@@ -127,7 +151,17 @@ function ViewLiveRoom() {
           type: LIVE_SOCKET_ACTION.OUT,
           roomId: locate.state.roomId,
         });
+
+        setIsWrongPath(() => true);
       });
+
+      socket.sendBinary(SIGNAL.ROOM, "find", {
+        roomId: locate.state?.roomId,
+      });
+
+      if (!locate.state?.roomId) {
+        setIsWrongPath(() => true);
+      }
 
       socketDispatch({
         type: LIVE_SOCKET_ACTION.JOIN,
@@ -150,12 +184,22 @@ function ViewLiveRoom() {
       videoBuffer = undefined;
       countDownloadChunk = 0;
       streamPoint = 0;
+      streams = [];
       socketDispatch({
         type: LIVE_SOCKET_ACTION.OUT,
         roomId: locate.state?.roomId,
       });
+      socket.off(SIGNAL.ROOM);
+      socket.off(SIGNAL.STREAM);
+      socket.off(SIGNAL.USER);
+      socket.off(INTERCEPT.ERROR);
+      socket.off(INTERCEPT.CLOSE);
     };
-  }, [mediaSource]);
+  }, []);
+
+  const handleClosePopup = (e: MouseEvent) => {
+    navigate("/");
+  };
 
   function handleSeekToLive() {
     if (videoRef.current) {
@@ -163,7 +207,16 @@ function ViewLiveRoom() {
     }
   }
 
-  return (
+  return isWrongPath ? (
+    <Box
+      sx={{
+        height: "inherit",
+        color: "#ffffff",
+        backgroundColor: "#222222",
+      }}>
+      <PopupModal type='deleted' immediately handler={handleClosePopup} />
+    </Box>
+  ) : (
     <Box
       sx={{
         height: "100vh",

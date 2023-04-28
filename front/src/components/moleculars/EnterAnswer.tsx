@@ -1,5 +1,6 @@
 import { Box } from "@mui/material";
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { v4 } from "uuid";
 import { answer } from "../../util/global";
 import EnterButton from "../atoms/EnterButton";
@@ -14,6 +15,7 @@ function EnterAnswer({
   roomTitle = "",
   color,
   variant,
+  children,
 }: EnterAnswerType) {
   const [open, setOpen] = useState(false);
   const [id, setRoomId] = useState("");
@@ -30,9 +32,19 @@ function EnterAnswer({
   }
   return (
     <Box>
-      <EnterButton onClick={handleClickOpen} color={color} variant={variant}>
-        {answer[type]}
-      </EnterButton>
+      {children ? (
+        <Box
+          onClick={handleClickOpen}
+          sx={{
+            cursor: "pointer",
+          }}>
+          {children}
+        </Box>
+      ) : (
+        <EnterButton onClick={handleClickOpen} color={color} variant={variant}>
+          {answer[type]}
+        </EnterButton>
+      )}
       <EnterDialog
         type={type}
         open={open}

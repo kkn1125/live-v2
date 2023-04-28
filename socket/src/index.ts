@@ -120,7 +120,8 @@ const app = uWS
       ws.subscribe("global");
       // ws.subscribe((ws as any).roomId);
       ws.subscribe((ws as any).userId);
-
+      /* 유저 생성 */
+      manager.users.insert((ws as any).userId);
       console.log("A WebSocket connected with URL: " + (ws as any).url);
     },
     message: (ws, message, isBinary) => {
@@ -136,6 +137,7 @@ const app = uWS
       if (room) {
         manager.out(room.id, (ws as any).userId);
       }
+      manager.users.delete((ws as any).userId);
     },
   })
   .listen(PORT, (token) => {

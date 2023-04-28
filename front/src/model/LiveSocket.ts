@@ -11,6 +11,7 @@ import type {
   LiveSocketSpecialActionType,
 } from "../util/global";
 import { INTERCEPT, SIGNAL } from "../util/global";
+import RoomController from "./RoomController";
 import User from "./User";
 
 const { Field, Message } = protobufjs;
@@ -84,6 +85,8 @@ export default class LiveSocket {
 
   user?: User;
 
+  roomController: RoomController;
+
   socket: WebSocket | null = null;
   events: {
     [key: string]: {
@@ -99,6 +102,7 @@ export default class LiveSocket {
     protocol && (this.protocol = protocol);
     host && (this.host = host);
     port && (this.port = port);
+    this.roomController = new RoomController(this);
   }
 
   connect(queries: Object = {}) {
@@ -250,17 +254,36 @@ export default class LiveSocket {
     this.events[type].listeners.push(listener);
   }
 
-  off(type: INTERCEPT | SIGNAL | (INTERCEPT | SIGNAL)[]) {
+  off(type?: INTERCEPT | SIGNAL | (INTERCEPT | SIGNAL)[]) {
     if (type instanceof Array) {
       type.forEach((t) => {
         if (this.events[t]) {
           delete this.events[t];
         }
       });
-    } else {
+    } else if (typeof type === "string" && !!type) {
       if (this.events[type]) {
         delete this.events[type];
       }
+    } else {
+      this.initialize();
+    }
+  }
+
+  removeListener(
+    type: BasicLiveSocketEventType,
+    listener: BasicLiveSocketEventListenerType
+  ): void;
+  removeListener(
+    type: DataLiveSocketEventType,
+    listener: DataLiveSocketEventListenerType
+  ): void;
+  removeListener(type: any, listener: any) {
+    const index = this.events[type].listeners.findIndex(
+      (ls) => ls === listener
+    );
+    if (index > -1) {
+      this.events[type].listeners.splice(index, 1);
     }
   }
 

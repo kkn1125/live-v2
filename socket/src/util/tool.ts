@@ -1,3 +1,6 @@
+import path from "path";
+import type Room from "../model/Room";
+
 const dev = function (this: Console) {
   let prefix = "";
   return Object.assign(
@@ -21,4 +24,7 @@ const dev = function (this: Console) {
 const queryParser = (queries: string) =>
   Object.fromEntries(queries.split("&").map((query) => query.split("=")));
 
-export { dev, queryParser };
+const TEMP_PATH = (room: Room, filename?: string) =>
+  path.join(path.resolve(), "tmp", room.id, filename || "");
+
+export { dev, queryParser, TEMP_PATH };

@@ -1,4 +1,4 @@
-import { Box, Chip, Stack, Typography } from "@mui/material";
+import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 import React, { useContext, useEffect, useState } from "react";
 import { v4 } from "uuid";
 import EnterAnswer from "../components/moleculars/EnterAnswer";
@@ -37,6 +37,12 @@ function Home() {
           setRooms((rooms) => roomsData);
         }
       });
+      socket.on(SIGNAL.ROOM, (type, origin, data) => {
+        if (data.action === "delete") {
+          const roomsData = data.result.rooms;
+          setRooms((rooms) => roomsData);
+        }
+      });
       socket.sendBinary(SIGNAL.ROOM, "fetch");
     });
 
@@ -52,37 +58,48 @@ function Home() {
   return (
     <div>
       <Stack>
-        {rooms.map(
-          (room, i) =>
-            room.admin && (
-              <Stack key={i} direction='row' gap={1} alignItems='center'>
-                <Typography component='span'>{i + 1}.</Typography>
-                <Typography component='span'>{room.title}</Typography>
-                <Chip
-                  icon={<SupervisorAccountIcon />}
-                  label={room.admin.nickname}
-                />
-                <EnterAnswer
-                  type='enter'
-                  title={room.title + "입장"}
-                  content={<Typography component='span'>room</Typography>}
-                  to='/live'
-                  roomId={room.id}
-                  roomTitle={room.title}
-                  color='success'
-                  variant='contained'
-                />
+        {rooms.map((room, i) => (
+          <Stack
+            component={Paper}
+            elevation={5}
+            key={i}
+            direction='row'
+            gap={1}
+            alignItems='center'
+            sx={{
+              p: 3,
+            }}>
+            <EnterAnswer
+              type='enter'
+              title={room.title + "입장"}
+              content={<Typography component='span'>room</Typography>}
+              to='/live'
+              roomId={room.id}
+              roomTitle={room.title}
+              color='success'
+              variant='contained'>
+              <Stack>
+                <Box>
+                  <Chip
+                    icon={<SupervisorAccountIcon />}
+                    label={room.admin.nickname}
+                  />
+                </Box>
+                <Stack direction='row'>
+                  <Typography component='span'>{room.title}</Typography>
+                </Stack>
               </Stack>
-            )
-        )}
+            </EnterAnswer>
+          </Stack>
+        ))}
       </Stack>
-      <EnterAnswer
+      {/* <EnterAnswer
         type='create'
         title={"룸 생성"}
         content={<Typography component='span'>room</Typography>}
         to='/live'
-      />
-      <Chat />
+      /> */}
+      {/* <Chat /> */}
     </div>
   );
 }

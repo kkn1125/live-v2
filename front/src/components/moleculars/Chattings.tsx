@@ -130,6 +130,7 @@ const randomMessage = [
 
 function Chattings({
   // videoEL,
+  userNickname,
   nosidebar = false,
 }: // room,
 // user,
@@ -139,6 +140,7 @@ function Chattings({
 // toggleChatting,
 {
   // videoEL: HTMLIFrameElement | HTMLVideoElement;
+  userNickname?: string;
   nosidebar?: boolean;
   // room: any;
   // user: any;
@@ -213,6 +215,7 @@ function Chattings({
     setHeart(true);
     if (!articleActive) {
       setArticleActive(true);
+      handleAddLikes();
     }
   };
 
@@ -230,7 +233,7 @@ function Chattings({
 
       // do something
       socket.sendBinary(SIGNAL.CHAT, "send", {
-        nickname: locate.state.nickname,
+        nickname: locate.state?.nickname || userNickname,
         content: value,
       });
 
@@ -246,6 +249,10 @@ function Chattings({
     if (e.key === "Enter") {
       handleSend();
     }
+  }
+
+  function handleAddLikes() {
+    socket.sendBinary(SIGNAL.ROOM, "like");
   }
 
   return (
@@ -288,9 +295,6 @@ function Chattings({
             [`.MuiTypography-root`]: {
               fontSize: (theme) => theme.typography.pxToRem(14),
             },
-          }}
-          onClick={() => {
-            /* autoDummyChat() */
           }}>
           {chatList.map(({ nickname, content, createdAt }, i) => (
             <Fade key={i} in timeout={1000}>
@@ -300,14 +304,11 @@ function Chattings({
                   fontWeight={700}
                   color={(theme) => theme.palette.grey[600]}>
                   {nickname}
-                </Typography>{" "}
+                </Typography>
                 {content}
-                {/* |{" "}
-              {new Date(createdAt).toLocaleString("ko")} */}
               </Typography>
             </Fade>
           ))}
-          {/* <Button onClick={autoDummyChat}>random chat</Button> */}
         </Box>
         {(nosidebar || toggleChat) && (
           <Fade in timeout={500}>
