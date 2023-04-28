@@ -21,7 +21,7 @@ import SlideTitle from "../moleculars/SlideTitle";
 import Chat from "../organisms/Chat";
 
 // new Hls()
-console.log(Hls.isSupported())
+console.log(Hls.isSupported());
 
 type URLs = string[];
 
@@ -80,13 +80,17 @@ function LiveCommerceLayout({
       if (data.action === "find") {
         const room = data.result.room;
         if (room) {
-          setLink(room.link);
-          setDesc(room.desc);
+          setLink((link) => room.link);
+          setDesc((desc) => room.linkDesc);
         }
       } else if (data.action === "send/link") {
         setLink((link) => data.result.link);
         setDesc((desc) => data.result.desc);
       }
+    });
+
+    socket.sendBinary(SIGNAL.ROOM, "find", {
+      roomId: room.id,
     });
   }, []);
 
@@ -125,12 +129,9 @@ function LiveCommerceLayout({
               />
             ))}
         </Box>
-        {isLive && (
-          <Typography>
-            {location.origin + location.pathname + "/" + room.id}
-          </Typography>
-        )}
+
         <LiveToolBar />
+
         <SlideTitle size={size} title={room.title} />
         <MiniTip badge='live' view={room?.users?.length || 0} color={"error"} />
         <Stack
@@ -140,7 +141,9 @@ function LiveCommerceLayout({
           }}>
           {video}
           <Toolbar sx={{ flex: 1, pointerEvents: "none" }} />
-          <LiveAddedLink link={link} desc={desc} />
+          <Box>
+            <LiveAddedLink link={link} desc={desc} />
+          </Box>
           <Chattings />
           <Box
             sx={{

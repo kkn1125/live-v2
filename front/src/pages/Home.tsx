@@ -8,7 +8,12 @@ import {
   LiveSocketDispatchContext,
 } from "../context/LiveSocketProvider";
 import LiveSocket from "../model/LiveSocket";
-import { INTERCEPT, LIVE_SOCKET_ACTION, SIGNAL } from "../util/global";
+import {
+  DataLiveSocketEventListenerType,
+  INTERCEPT,
+  LIVE_SOCKET_ACTION,
+  SIGNAL,
+} from "../util/global";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 
 function Home() {
@@ -16,42 +21,41 @@ function Home() {
   const socket = useContext(LiveSocketContext);
   const socketDispatch = useContext(LiveSocketDispatchContext);
 
+  const roomHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
+    console.log(data);
+    if (data.action === "create") {
+      const roomsData = data.result.rooms;
+      setRooms((rooms) => roomsData);
+    } else if (data.action === "update") {
+      const roomsData = data.result.rooms;
+      setRooms((rooms) => roomsData);
+    } else if (data.action === "fetch") {
+      const roomsData = data.result.rooms;
+      setRooms((rooms) => roomsData);
+    } else if (data.action === "delete") {
+      const roomsData = data.result.rooms;
+      setRooms((rooms) => roomsData);
+    }
+  };
+
+  const userHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
+    if (data.action === "update") {
+      const roomsData = data.result.rooms;
+      setRooms((rooms) => roomsData);
+    }
+  };
+
   useEffect(() => {
     socket.ifActivated(() => {
-      socket.on(SIGNAL.ROOM, (type, origin, data) => {
-        console.log(data);
-        if (data.action === "create") {
-          const roomsData = data.result.rooms;
-          setRooms((rooms) => roomsData);
-        } else if (data.action === "update") {
-          const roomsData = data.result.rooms;
-          setRooms((rooms) => roomsData);
-        } else if (data.action === "fetch") {
-          const roomsData = data.result.rooms;
-          setRooms((rooms) => roomsData);
-        }
-      });
-      socket.on(SIGNAL.USER, (type, origin, data) => {
-        if (data.action === "update") {
-          const roomsData = data.result.rooms;
-          setRooms((rooms) => roomsData);
-        }
-      });
-      socket.on(SIGNAL.ROOM, (type, origin, data) => {
-        if (data.action === "delete") {
-          const roomsData = data.result.rooms;
-          setRooms((rooms) => roomsData);
-        }
-      });
+      socket.on(SIGNAL.ROOM, roomHandler);
+      socket.on(SIGNAL.USER, userHandler);
+
       socket.sendBinary(SIGNAL.ROOM, "fetch");
     });
 
     return () => {
-      // socketDispatch({
-      //   type: LIVE_SOCKET_ACTION.OUT,
-      //   roomId:
-      // });
-      socket.off(SIGNAL.ROOM);
+      socket.removeListener(SIGNAL.ROOM, roomHandler);
+      socket.removeListener(SIGNAL.USER, userHandler);
     };
   }, []);
 

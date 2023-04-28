@@ -61,7 +61,11 @@ export default function binaryHandler(
         });
       } else if (base.action === "find") {
         const room = manager.rooms.findOne(base.data.roomId);
-        publisher.manager.sendMe(ws, base, { room });
+        if (room) {
+          const link = room.link;
+          const desc = room.linkDesc;
+          publisher.manager.sendMe(ws, base, { room, link, desc });
+        }
       } else if (base.action === "create") {
         const room = manager.rooms.insert(base.data.roomId);
         const user = manager.users.findOne((ws as any).userId);
@@ -178,7 +182,7 @@ export default function binaryHandler(
           const stream = base.data.stream;
           /* add stream */
           room.addStream(base.data.stream);
-          
+
           const filename = room.id + "-" + chunkUploadCount + ".webm";
           fs.writeFileSync(TEMP_PATH(room, filename), stream);
           chunkUploadCount++;

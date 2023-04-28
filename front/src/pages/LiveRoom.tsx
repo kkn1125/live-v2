@@ -19,13 +19,19 @@ import { v4 } from "uuid";
 import Chattings from "../components/moleculars/Chattings";
 import CustomVideo from "../components/moleculars/CustomVideo";
 import LikeView from "../components/moleculars/LikeView";
+import LiveAddedLink from "../components/moleculars/LiveAddedLink";
 import LiveAddLink from "../components/moleculars/LiveAddLink";
 import MiniTip from "../components/moleculars/MiniTip";
 import {
   LiveSocketContext,
   LiveSocketDispatchContext,
 } from "../context/LiveSocketProvider";
-import { CODEC, LIVE_SOCKET_ACTION, SIGNAL } from "../util/global";
+import {
+  CODEC,
+  DataLiveSocketEventListenerType,
+  LIVE_SOCKET_ACTION,
+  SIGNAL,
+} from "../util/global";
 import { timerConvert } from "../util/tool";
 
 let mediaSource: MediaSource;
@@ -66,6 +72,8 @@ function RecordRoom() {
   const [startLiveTime, setStartLiveTime] = useState(0);
   const nowRef = useRef(new Date());
   const currentVideoRef = useRef<HTMLVideoElement>();
+  const [link, setLink] = useState("");
+  const [desc, setDesc] = useState("");
 
   function registerRecord(stream: MediaStream) {
     const mediaRecorder = new MediaRecorder(stream, {
@@ -90,6 +98,27 @@ function RecordRoom() {
     }, 500);
   }
 
+  const roomHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
+    if (data.action === "create") {
+      setRoom((room) => data.result.room);
+    } else if (data.action === "update/join" || data.action === "update/out") {
+      setRoom((room) => data.result.room);
+    } else if (data.action === "send/link") {
+      setLink(data.result.link);
+      setDesc(data.result.desc);
+    }
+  };
+
+  const streamHandler: DataLiveSocketEventListenerType = (
+    type,
+    origin,
+    data
+  ) => {
+    if (data.action === "send") {
+      streamPoint = Number(data.result.streamPoint);
+    }
+  };
+
   useEffect(() => {
     idRef.current = roomInfo.roomId;
     titleRef.current = roomInfo.title;
@@ -100,31 +129,9 @@ function RecordRoom() {
     setRoomInfo((roomInfo) => Object.assign({ ...roomInfo }, { roomId: v4() }));
 
     mediaSource = new MediaSource();
-    socket.on(SIGNAL.ROOM, (type, origin, data) => {
-      if (data.action === "create") {
-        setRoom((room) => data.result.room);
-      } else if (
-        data.action === "update/join" ||
-        data.action === "update/out"
-      ) {
-        setRoom((room) => data.result.room);
-      }
-    });
+    socket.on(SIGNAL.ROOM, roomHandler);
 
-    // socket.on(SIGNAL.USER, (type, origin, data) => {
-    //   if (
-    //     data.action === "create" ||
-    //     data.action === "update" ||
-    //     data.action === "delete"
-    //   ) {
-    //     setRoom((room) => data.result.room);
-    //   }
-    // });
-    socket.on(SIGNAL.STREAM, (type, origin, data) => {
-      if (data.action === "send") {
-        streamPoint = Number(data.result.streamPoint);
-      }
-    });
+    socket.on(SIGNAL.STREAM, streamHandler);
 
     setStartTime({
       h: new Date().getHours(),
@@ -160,6 +167,8 @@ function RecordRoom() {
       countUploadChunk = 0;
       countDownloadChunk = 0;
       deleteRoom();
+      socket.removeListener(SIGNAL.ROOM, roomHandler);
+      socket.removeListener(SIGNAL.STREAM, streamHandler);
     };
   }, []);
 
@@ -381,6 +390,15 @@ function RecordRoom() {
             sx={{
               flex: 1,
             }}>
+            {/* <LiveAddedLink link={link} desc={desc} /> */}
+            {isLiveStart && (
+              <Typography>
+                {location.origin +
+                  location.pathname +
+                  "/" +
+                  (roomInfo.roomId || "")}
+              </Typography>
+            )}
             <LiveAddLink />
             <Box sx={{ flex: 1 }}>
               <Chattings userNickname={roomInfo.nickname} />
