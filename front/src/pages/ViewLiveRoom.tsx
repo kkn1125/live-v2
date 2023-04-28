@@ -1,6 +1,7 @@
 import { Box, Button, Chip, CircularProgress, Typography } from "@mui/material";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { v4 } from "uuid";
 import Player from "video.js/dist/types/player";
 import CustomVideo from "../components/moleculars/CustomVideo";
 import PopupModal from "../components/moleculars/PopupModal";
@@ -170,7 +171,7 @@ function ViewLiveRoom() {
 
       socket.sendBinary(SIGNAL.USER, "update", {
         userData: {
-          nickname: locate.state.nickname,
+          nickname: locate.state.nickname || 'Guest-'+v4({}),
         },
       });
 
