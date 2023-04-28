@@ -101,7 +101,7 @@ function ViewLiveRoom() {
       });
 
       socket.on(SIGNAL.ROOM, (type, origin, data) => {
-        if (data.action === "update/join" || data.action === "update/out") {
+        if (data.action === "join" || data.action === "out") {
           setRoom((room) => data.result.room);
         }
       });

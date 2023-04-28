@@ -101,7 +101,7 @@ function RecordRoom() {
   const roomHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
     if (data.action === "create") {
       setRoom((room) => data.result.room);
-    } else if (data.action === "update/join" || data.action === "update/out") {
+    } else if (data.action === "join" || data.action === "out") {
       setRoom((room) => data.result.room);
     } else if (data.action === "send/link") {
       setLink(data.result.link);
@@ -181,19 +181,16 @@ function RecordRoom() {
 
   async function connectSocket() {
     console.log("🚀socket", socket);
-    socket.roomController.create(idRef.current, titleRef.current);
-    // socket.roomController.join(idRef.current);
-    // socket.sendBinary(SIGNAL.ROOM, "update", {
-    //   roomId: idRef.current,
-    //   roomData: {
-    //     title: titleRef.current,
+    socket.rooms.create(idRef.current, titleRef.current);
+
+    socket.users.update({
+      nickname: nicknameRef.current,
+    });
+    // socket.sendBinary(SIGNAL.USER, "update", {
+    //   userData: {
+    //     nickname: nicknameRef.current,
     //   },
     // });
-    socket.sendBinary(SIGNAL.USER, "update", {
-      userData: {
-        nickname: nicknameRef.current,
-      },
-    });
   }
 
   async function start() {

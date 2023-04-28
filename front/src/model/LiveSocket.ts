@@ -13,6 +13,7 @@ import type {
 import { INTERCEPT, SIGNAL } from "../util/global";
 import RoomController from "./RoomController";
 import User from "./User";
+import UserController from "./UserController";
 
 const { Field, Message } = protobufjs;
 
@@ -85,7 +86,8 @@ export default class LiveSocket {
 
   user?: User;
 
-  roomController: RoomController;
+  rooms: RoomController;
+  users: UserController;
 
   socket: WebSocket | null = null;
   events: {
@@ -102,7 +104,8 @@ export default class LiveSocket {
     protocol && (this.protocol = protocol);
     host && (this.host = host);
     port && (this.port = port);
-    this.roomController = new RoomController(this);
+    this.rooms = new RoomController(this);
+    this.users = new UserController(this);
   }
 
   connect(queries: Object = {}) {
@@ -129,12 +132,6 @@ export default class LiveSocket {
 
   disconnect() {
     this.socket?.close();
-  }
-
-  deleteRoom(roomId: string) {
-    this.sendBinary(SIGNAL.ROOM, "delete", {
-      roomId,
-    });
   }
 
   /* intialize listeners */
@@ -378,19 +375,5 @@ export default class LiveSocket {
         server: false,
       })
     ).finish();
-  }
-
-  join(roomId: string) {
-    this.sendBinary(SIGNAL.ROOM, "update/join", {
-      join: true,
-      roomId: roomId,
-    });
-  }
-
-  out(roomId: string) {
-    this.sendBinary(SIGNAL.ROOM, "update/out", {
-      out: true,
-      roomId: roomId,
-    });
   }
 }

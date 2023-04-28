@@ -99,7 +99,7 @@ export default function binaryHandler(
 
         publisher.manager.publish(app, ws, base, { rooms });
       } else if (base.action === "update") {
-        const room = manager.rooms.update(base.data.roomId, base.data.roomData);
+        const room = manager.rooms.update(base.data.roomId, base.data);
         const rooms = manager.rooms.findAll();
         publisher.manager.publish(app, ws, base, { room, rooms });
       } else if (base.action === "update/join") {
@@ -144,7 +144,7 @@ export default function binaryHandler(
         console.log("update userid", (ws as any).userId);
         const room = manager.rooms.findOneUserIn((ws as any).userId);
         if (room) {
-          const user = room.updateUser((ws as any).userId, base.data.userData);
+          const user = room.updateUser((ws as any).userId, base.data);
           console.log(room, user);
           const rooms = manager.rooms.findAll();
           publisher.manager.publish(app, ws, base, { room, user, rooms });
@@ -183,9 +183,10 @@ export default function binaryHandler(
           /* add stream */
           room.addStream(base.data.stream);
 
-          const filename = room.id + "-" + chunkUploadCount + ".webm";
-          fs.writeFileSync(TEMP_PATH(room, filename), stream);
-          chunkUploadCount++;
+          /* file write stream */
+          // const filename = room.id + "-" + chunkUploadCount + ".webm";
+          // fs.writeFileSync(TEMP_PATH(room, filename), stream);
+          // chunkUploadCount++;
 
           publisher.manager.sendMe(ws, base, {
             stream,

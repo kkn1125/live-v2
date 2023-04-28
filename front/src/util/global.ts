@@ -67,7 +67,8 @@ type LiveSocketSpecialActionType =
   | "delete"
   | "find"
   | "update"
-  | `update/${"join" | "out"}`
+  | "join"
+  | "out"
   | `like`;
 type LiveSocketActionType =
   | LiveSocketBasicActionType

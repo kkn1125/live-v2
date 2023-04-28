@@ -14,8 +14,26 @@ export default class RoomController {
     });
   }
 
+  // join(roomId: string) {
+  //   this.#socket.sendBinary(SIGNAL.ROOM, "update/join", {
+  //     roomId,
+  //   });
+  // }
+
   join(roomId: string) {
-    this.#socket.sendBinary(SIGNAL.ROOM, "update/join", {
+    this.#socket.sendBinary(SIGNAL.ROOM, "join", {
+      roomId: roomId,
+    });
+  }
+
+  out(roomId: string) {
+    this.#socket.sendBinary(SIGNAL.ROOM, "out", {
+      roomId: roomId,
+    });
+  }
+
+  delete(roomId: string) {
+    this.#socket.sendBinary(SIGNAL.ROOM, "delete", {
       roomId,
     });
   }
