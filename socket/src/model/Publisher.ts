@@ -1,5 +1,5 @@
 import uWS, { TemplatedApp } from "uWebSockets.js";
-import protobufjs from "protobufjs";
+import * as protobufjs from "protobufjs";
 
 const { Message } = protobufjs;
 

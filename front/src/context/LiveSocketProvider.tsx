@@ -6,7 +6,7 @@ import {
   SOCKET_PORT,
   SOCKET_PROTOCOL,
 } from "../util/global";
-
+console.log(SOCKET_PROTOCOL, SOCKET_HOST, SOCKET_PORT)
 let initialState = new LiveSocket(SOCKET_PROTOCOL, SOCKET_HOST, SOCKET_PORT);
 
 export const LiveSocketContext = createContext<LiveSocket>(initialState);

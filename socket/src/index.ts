@@ -4,7 +4,7 @@ import uWS from "uWebSockets.js";
 import messageHandler from "./service/MessageHandler";
 import { PORT } from "./util/global";
 import { dev } from "./util/tool";
-import protobufjs from "protobufjs";
+import * as protobufjs from "protobufjs";
 import { v4 } from "uuid";
 import { manager } from "./model/Manager";
 

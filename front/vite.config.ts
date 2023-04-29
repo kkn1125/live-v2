@@ -18,9 +18,21 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
     define: {
       __APP_ENV__: env.APP_ENV,
     },
+    base: "",
     server: {
       host: process.env.HOST,
       port: Number(process.env.PORT) || 3000,
+      ...(mode === "production"
+        ? {
+            hmr: {
+              protocol: process.env.VITE_SOCKET_PROTOCOL,
+              host: process.env.VITE_SOCKET_HOST,
+              port: Number(process.env.VITE_SOCKET_PORT),
+              overlay: true,
+              clientPort: Number(process.env.PORT) || 3000,
+            },
+          }
+        : {}),
     },
     plugins: [react()],
   };

@@ -3,8 +3,8 @@ import { manager } from "./Manager";
 describe("Manager Test Suit 1", () => {
   describe("Manager Create Test", () => {
     test("manager create check", () => {
-      const room = manager.insertRoom("test");
-      const findRoom = manager.findRoom("test");
+      const room = manager.rooms.insert("test");
+      const findRoom = manager.rooms.findOne("test");
       expect(room).toStrictEqual(findRoom);
     });
   });

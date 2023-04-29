@@ -1,4 +1,4 @@
-import { Message } from "protobufjs";
+import * as protobufjs from "protobufjs";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 import { manager } from "../model/Manager";
 import PublishManager from "../model/Publisher";
@@ -6,6 +6,8 @@ import User from "../model/User";
 import fs from "fs";
 import path from "path";
 import { TEMP_PATH } from "../util/tool";
+
+const { Message } = protobufjs;
 
 const publisher = new PublishManager(true);
 let chunkUploadCount = 0;
