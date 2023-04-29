@@ -12,7 +12,7 @@ RUN . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
 ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
 
 RUN npm i -g npm@latest
-RUN npm i -g cross-env nodemon dotenv
+RUN npm i -g cross-env nodemon dotenv serve
 
 RUN mkdir -p /home/ubuntu/live_ander/front
 
