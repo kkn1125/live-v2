@@ -1,0 +1,17 @@
+version: 3.9
+services:
+  live:
+    container_name: live
+    image: kkn1125/individual:live-v0.0.1
+    build: .
+    ports:
+      - 3000:3000
+    command: npm run prod
+
+  socket:
+    container_name: socket
+    image: kkn1125/individual:live-socket-v0.0.1
+    build: .
+    ports:
+      - 4000:4000
+    command: npm run prod
