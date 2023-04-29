@@ -31,3 +31,5 @@ __tests__/
 *-lock.json
 
 tmp/
+
+build/
