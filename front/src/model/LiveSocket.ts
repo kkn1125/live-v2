@@ -214,14 +214,21 @@ export default class LiveSocket {
         (this.events[a].listeners as DataLiveSocketEventListenerType[]).forEach(
           (cb) => cb.call(this, a, b, c)
         );
-        this.events[a].promise.forEach((prm) => prm(c));
+        for (let prm of this.events[a].promise) {
+          prm(c);
+        }
+        this.events[a].promise = [];
+        // this.events[a].promise.forEach((prm) => prm(c));
       }
     } else {
       if (this.events[a]) {
         (
           this.events[a].listeners as BasicLiveSocketEventListenerType[]
         ).forEach((cb) => cb.call(this, a, b));
-        this.events[a].promise.forEach((prm) => prm(b));
+        for (let prm of this.events[a].promise) {
+          prm(c);
+        }
+        this.events[a].promise = [];
       }
     }
   }

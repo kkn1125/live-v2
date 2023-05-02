@@ -2,7 +2,7 @@ import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 import React, { useContext, useEffect, useState } from "react";
 import { v4 } from "uuid";
 import EnterAnswer from "../components/moleculars/EnterAnswer";
-import Chat from "../components/organisms/Chat";
+import Chat from "../components/organisms/[x]Chat";
 import {
   LiveSocketContext,
   LiveSocketDispatchContext,
@@ -22,7 +22,6 @@ function Home() {
   const socketDispatch = useContext(LiveSocketDispatchContext);
 
   const roomHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
-    console.log(data);
     if (data.action === "create") {
       const roomsData = data.result.rooms;
       setRooms((rooms) => roomsData);
@@ -60,51 +59,45 @@ function Home() {
   }, []);
 
   return (
-    <div>
-      <Stack>
-        {rooms.map((room, i) => (
-          <Stack
-            component={Paper}
-            elevation={5}
-            key={i}
-            direction='row'
-            gap={1}
-            alignItems='center'
-            sx={{
-              p: 3,
-            }}>
-            <EnterAnswer
-              type='enter'
-              title={room.title + "입장"}
-              content={<Typography component='span'>room</Typography>}
-              to='/live'
-              roomId={room.id}
-              roomTitle={room.title}
-              color='success'
-              variant='contained'>
-              <Stack>
-                <Box>
-                  <Chip
-                    icon={<SupervisorAccountIcon />}
-                    label={room.admin.nickname}
-                  />
-                </Box>
-                <Stack direction='row'>
-                  <Typography component='span'>{room.title}</Typography>
-                </Stack>
+    <Stack>
+      {rooms.map((room, i) => (
+        <Stack
+          component={Paper}
+          elevation={5}
+          key={i}
+          direction='row'
+          gap={1}
+          alignItems='center'
+          sx={{
+            p: 3,
+          }}>
+          <EnterAnswer
+            type='enter'
+            title={room.title + "입장"}
+            content={<Typography component='span'>room</Typography>}
+            to='/live'
+            roomId={room.id}
+            roomTitle={room.title}
+            color='success'
+            variant='contained'>
+            <Stack direction='row' alignItems={"center"} gap={1}>
+              <Stack sx={{ flex: 1 }}>
+                <Typography component='span'>{room.title}</Typography>
+                <Typography component='span'>
+                  {new Date(room.createdAt).toLocaleString("ko")}
+                </Typography>
               </Stack>
-            </EnterAnswer>
-          </Stack>
-        ))}
-      </Stack>
-      {/* <EnterAnswer
-        type='create'
-        title={"룸 생성"}
-        content={<Typography component='span'>room</Typography>}
-        to='/live'
-      /> */}
-      {/* <Chat /> */}
-    </div>
+              <Box>
+                <Chip
+                  icon={<SupervisorAccountIcon />}
+                  label={room.admin.nickname}
+                />
+              </Box>
+            </Stack>
+          </EnterAnswer>
+        </Stack>
+      ))}
+    </Stack>
   );
 }
 

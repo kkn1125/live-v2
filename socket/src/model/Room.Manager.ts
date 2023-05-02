@@ -67,7 +67,7 @@ export default class RoomManager
   update(id: string, newRoom: Object) {
     const room = this.findOne(id);
     if (room) {
-      Object.assign(room, newRoom);
+      Object.assign(room, { ...newRoom });
       // console.log("room update", room);
     }
     return room;

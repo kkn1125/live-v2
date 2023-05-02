@@ -61,9 +61,10 @@ export default class UserManager
 
   update(id: string, newUser: User): User {
     const user = this.find((user) => user.id === id);
+    console.log(newUser)
     if (user) {
-      Object.assign(user, newUser);
-      // console.log("user update", user);
+      Object.assign(user, { ...newUser });
+      console.log("user update", user);
     }
     return user;
   }

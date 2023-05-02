@@ -36,7 +36,7 @@ import { timerConvert } from "../util/tool";
 
 let mediaSource: MediaSource;
 let videoBuffer: SourceBuffer | undefined = undefined;
-let streams: ArrayBuffer[] = [];
+let streamsChunk: ArrayBuffer[] = [];
 let countUploadChunk = 0;
 let countDownloadChunk = 0;
 let isStartedLive: number;
@@ -74,27 +74,53 @@ function RecordRoom() {
   const currentVideoRef = useRef<HTMLVideoElement>();
   const [link, setLink] = useState("");
   const [desc, setDesc] = useState("");
+  const [user, setUser] = useState<any>({});
 
   function registerRecord(stream: MediaStream) {
     const mediaRecorder = new MediaRecorder(stream, {
       mimeType: CODEC,
-      bitsPerSecond: 2000,
-      videoBitsPerSecond: 500,
-      audioBitsPerSecond: 500,
+      // bitsPerSecond: 2000,
+      // videoBitsPerSecond: 500,
+      // audioBitsPerSecond: 500,
     });
     console.log("register");
     mediaRecorder.ondataavailable = async (data) => {
       const mediaArrayBuffer = await data.data.arrayBuffer();
       console.log("add chunk", countUploadChunk);
-      streams.push(mediaArrayBuffer);
+      streamsChunk.push(mediaArrayBuffer);
       countUploadChunk++;
       console.log("record");
     };
 
+    mediaRecorder.onstop = async () => {
+      const stream = streamsChunk.splice(0, streamsChunk.length)[0];
+
+      if (videoBuffer) {
+        // const stream = streams[countDownloadChunk];
+        if (stream) {
+          console.log("get chunk", countDownloadChunk);
+          videoBuffer?.appendBuffer(stream);
+          socket.sendBinary(SIGNAL.STREAM, "send", {
+            stream: new Uint8Array(stream).toString(),
+          });
+
+          if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
+            setIsLive(false);
+          } else {
+            setIsLive(true);
+          }
+
+          countDownloadChunk++;
+        }
+      }
+    };
+
     mediaRecorder.start();
 
-    recordLoop = setInterval(() => {
-      mediaRecorder.requestData();
+    recordLoop = setTimeout(() => {
+      // mediaRecorder.requestData();
+      mediaRecorder.stop();
+      registerRecord(stream);
     }, 500);
   }
 
@@ -106,6 +132,12 @@ function RecordRoom() {
     } else if (data.action === "send/link") {
       setLink(data.result.link);
       setDesc(data.result.desc);
+    }
+  };
+
+  const userHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
+    if (data.action === "update" || data.action === "fetch") {
+      setUser((user) => data.result.user);
     }
   };
 
@@ -130,8 +162,11 @@ function RecordRoom() {
 
     mediaSource = new MediaSource();
     socket.on(SIGNAL.ROOM, roomHandler);
+    socket.on(SIGNAL.USER, userHandler);
 
     socket.on(SIGNAL.STREAM, streamHandler);
+
+    socket.sendBinary(SIGNAL.USER, "fetch");
 
     setStartTime({
       h: new Date().getHours(),
@@ -163,7 +198,7 @@ function RecordRoom() {
       clearInterval(chunkStreamLoop);
       clearInterval(streamingTime);
       cancelAnimationFrame(isStartedLive);
-      streams = [];
+      streamsChunk = [];
       countUploadChunk = 0;
       countDownloadChunk = 0;
       deleteRoom();
@@ -186,11 +221,6 @@ function RecordRoom() {
     socket.users.update({
       nickname: nicknameRef.current,
     });
-    // socket.sendBinary(SIGNAL.USER, "update", {
-    //   userData: {
-    //     nickname: nicknameRef.current,
-    //   },
-    // });
   }
 
   async function start() {
@@ -205,26 +235,26 @@ function RecordRoom() {
 
     videoBuffer = mediaSource.addSourceBuffer(CODEC);
 
-    chunkStreamLoop = setInterval(() => {
-      if (videoBuffer) {
-        const stream = streams[countDownloadChunk];
-        if (stream) {
-          console.log("get chunk", countDownloadChunk);
-          videoBuffer?.appendBuffer(stream);
-          socket.sendBinary(SIGNAL.STREAM, "send", {
-            stream: new Uint8Array(stream).toString(),
-          });
+    // chunkStreamLoop = setInterval(() => {
+    //   if (videoBuffer) {
+    //     const stream = streams[countDownloadChunk];
+    //     if (stream) {
+    //       console.log("get chunk", countDownloadChunk);
+    //       videoBuffer?.appendBuffer(stream);
+    //       socket.sendBinary(SIGNAL.STREAM, "send", {
+    //         stream: new Uint8Array(stream).toString(),
+    //       });
 
-          if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
-            setIsLive(false);
-          } else {
-            setIsLive(true);
-          }
+    //       if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
+    //         setIsLive(false);
+    //       } else {
+    //         setIsLive(true);
+    //       }
 
-          countDownloadChunk++;
-        }
-      }
-    }, 500);
+    //       countDownloadChunk++;
+    //     }
+    //   }
+    // }, 500);
 
     streamingTime = setInterval(() => {
       setLiveTime((liveTime) => liveTime + 1);
@@ -328,7 +358,7 @@ function RecordRoom() {
               sx={{
                 position: "relative",
               }}>
-              <Stack gap={1} sx={{ width: 300 }}>
+              <Stack gap={1} sx={{ width: 350 }}>
                 <Box sx={{ flex: 1 }}>
                   <Typography fontSize={20} fontWeight={700}>
                     Current Video
@@ -336,7 +366,7 @@ function RecordRoom() {
                 </Box>
                 <CustomVideo videoRef={currentVideoRef} />
               </Stack>
-              <Stack gap={1} sx={{ width: 500, position: "relative" }}>
+              <Stack gap={1} sx={{ width: 350, position: "relative" }}>
                 <Stack direction='row' alignItems='center' sx={{ flex: 1 }}>
                   <Typography fontSize={20} fontWeight={700}>
                     Live Video
@@ -361,7 +391,7 @@ function RecordRoom() {
                   <Box
                     sx={{
                       position: "absolute",
-                      top: 0,
+                      top: 50,
                       right: 10,
                       zIndex: 100,
                     }}>
@@ -387,7 +417,6 @@ function RecordRoom() {
             sx={{
               flex: 1,
             }}>
-            {/* <LiveAddedLink link={link} desc={desc} /> */}
             {isLiveStart && (
               <Typography>
                 {location.origin +
@@ -398,7 +427,7 @@ function RecordRoom() {
             )}
             <LiveAddLink />
             <Box sx={{ flex: 1 }}>
-              <Chattings userNickname={roomInfo.nickname} />
+              <Chattings user={user} />
             </Box>
           </Stack>
         ) : (

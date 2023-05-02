@@ -18,7 +18,7 @@ import LiveToolBar from "../moleculars/LiveToolBar";
 import MiniTip from "../moleculars/MiniTip";
 import PopupModal from "../moleculars/PopupModal";
 import SlideTitle from "../moleculars/SlideTitle";
-import Chat from "../organisms/Chat";
+import Chat from "../organisms/[x]Chat";
 
 // new Hls()
 console.log(Hls.isSupported());
@@ -27,6 +27,7 @@ type URLs = string[];
 
 interface LiveCommerceOptionTypes {
   room?: any;
+  user?: any;
   video?: React.ReactElement;
   loading?: boolean;
   isLive?: boolean;
@@ -48,6 +49,7 @@ const LIVE_SIZE = {
 function LiveCommerceLayout({
   video,
   room,
+  user,
   loading,
   isLive,
   handleSeekToLive,
@@ -63,8 +65,6 @@ function LiveCommerceLayout({
     height: 0,
   });
   const [toggleChat, setToggleChat] = useState(false);
-  const [link, setLink] = useState("");
-  const [desc, setDesc] = useState("");
 
   useEffect(() => {
     if (iframeRef.current) {
@@ -75,23 +75,6 @@ function LiveCommerceLayout({
         }));
       }).observe(iframeRef.current);
     }
-
-    socket.on(SIGNAL.ROOM, (type, origin, data) => {
-      if (data.action === "find") {
-        const room = data.result.room;
-        if (room) {
-          setLink((link) => room.link);
-          setDesc((desc) => room.linkDesc);
-        }
-      } else if (data.action === "send/link") {
-        setLink((link) => data.result.link);
-        setDesc((desc) => data.result.desc);
-      }
-    });
-
-    socket.sendBinary(SIGNAL.ROOM, "find", {
-      roomId: room.id,
-    });
   }, []);
 
   return (
@@ -140,11 +123,14 @@ function LiveCommerceLayout({
             position: "relative",
           }}>
           {video}
+
           <Toolbar sx={{ flex: 1, pointerEvents: "none" }} />
-          <Box>
-            <LiveAddedLink link={link} desc={desc} />
+
+          <Box sx={{ zIndex: 100 }}>
+            <LiveAddedLink />
+            <Chattings user={user} />
           </Box>
-          <Chattings />
+
           <Box
             sx={{
               zIndex: 1,

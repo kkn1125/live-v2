@@ -9,23 +9,6 @@ function LiveAddLink() {
   const linkDescRef = useRef<HTMLInputElement>();
   const linkRef = useRef<HTMLInputElement>();
   const socket = useContext(LiveSocketContext);
-  const [roomLink, setRoomLink] = useState({
-    link: "",
-    desc: "",
-  });
-
-  useEffect(() => {
-    socket.on(SIGNAL.ROOM, (type, origin, data) => {
-      if (data.action === "send/link") {
-        const desc = data.result.desc;
-        const link = data.result.link;
-        setRoomLink({
-          link,
-          desc,
-        });
-      }
-    });
-  }, []);
 
   function handleAddLink() {
     const linkDescEl = linkDescRef.current as HTMLInputElement;
@@ -46,7 +29,7 @@ function LiveAddLink() {
 
   return (
     <Box sx={{ flex: 1 }}>
-      <LiveAddedLink link={roomLink.link} desc={roomLink.desc} />
+      <LiveAddedLink />
       <Typography fontSize={20} fontWeight={700}>
         🔗 링크 등록
       </Typography>

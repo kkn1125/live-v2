@@ -22,6 +22,14 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
     server: {
       host: process.env.HOST,
       port: Number(process.env.PORT) || 3000,
+      cors: true,
+      proxy: {
+        "/hls": {
+          target: "http://localhost:4000/hls",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/hls/, ""),
+        },
+      },
       ...(mode === "production"
         ? {
             hmr: {

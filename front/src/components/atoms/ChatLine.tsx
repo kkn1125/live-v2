@@ -16,10 +16,8 @@ function ChatLine({ chat }: { chat: ChatLineType }) {
           fontWeight={700}
           color={(theme) => theme.palette.grey[600]}>
           {chat.nickname}
-        </Typography>{" "}
+        </Typography>
         {chat.content}
-        {/* |{" "}
-        {new Date(created_at).toLocaleString("ko")} */}
       </Typography>
     </Fade>
   );

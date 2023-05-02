@@ -10,6 +10,9 @@ export type RoomUpdateType = {
   admin: User;
   users?: User[];
   limit: number;
+
+  chunkUploadCount: number;
+
   createdAt?: number;
   updatedAt?: number;
 };
@@ -26,6 +29,8 @@ export default class Room {
   linkDesc: string = "";
   likes: string[] = [];
   views: number = 0;
+
+  chunkUploadCount: number = 0;
 
   /* room users */
   admin?: User;
@@ -108,22 +113,23 @@ export default class Room {
 
   updateUser(userId: string, userData: User) {
     const user = this.findUser(userId);
+    console.log("userData", userData);
     if (user) {
-      Object.assign(user, userData);
+      Object.assign(user, { ...userData });
     }
     return user;
   }
 
   updateRoom(roomData: Room) {
-    Object.assign(this, roomData);
+    Object.assign(this, { ...roomData });
     return this;
   }
 
   addStream(stream: string) {
-    const buffer = new Uint8Array(stream.split(",").map((s) => Number(s)))
-      .buffer;
-    this.streams.push(buffer);
-    console.log("add buffer", buffer);
+    const buffer = new Uint8Array(stream.split(",").map((s) => Number(s)));
+    this.streams.push(buffer.buffer);
+    console.log("add buffer", buffer.buffer);
+    return buffer;
   }
 
   getStream(index: number) {

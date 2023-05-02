@@ -1,39 +1,24 @@
-import React, {
-  useRef,
-  useEffect,
-  useState,
-  MouseEvent,
-  memo,
-  useMemo,
-  useCallback,
-  Fragment,
-  useContext,
-} from "react";
-import {
-  Box,
-  Stack,
-  Button,
-  Typography,
-  Paper,
-  Fade,
-  IconButton,
-  Badge,
-  styled,
-  Avatar,
-  TextField,
-} from "@mui/material";
-import HelpCenterIcon from "@mui/icons-material/HelpCenter";
-import FavoriteIcon from "@mui/icons-material/Favorite";
-import anime from "animejs";
 import ChatIcon from "@mui/icons-material/Chat";
-import MarkUnreadChatAltIcon from "@mui/icons-material/MarkUnreadChatAlt";
-import LiveSocket from "../../model/LiveSocket";
-import { SIGNAL } from "../../util/global";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import HelpCenterIcon from "@mui/icons-material/HelpCenter";
+import { Avatar, Box, Fade, IconButton, Stack, TextField } from "@mui/material";
+import anime from "animejs";
+import React, {
+  Fragment,
+  memo,
+  MouseEvent,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useLocation } from "react-router-dom";
 import {
   LiveSocketContext,
   LiveSocketDispatchContext,
 } from "../../context/LiveSocketProvider";
-import { useLocation } from "react-router-dom";
+import { SIGNAL } from "../../util/global";
+import ChatLine from "../atoms/ChatLine";
 
 const opacities = Object.fromEntries(
   new Array(15).fill(0).map((a, i) => [i, (Math.random() + 0.2) * 0.8])
@@ -100,57 +85,15 @@ const Articles = memo(
   }
 );
 
-const randomUserName = [
-  "몰디브두잔",
-  "호박고구마",
-  "고슴도치",
-  "집게리아사장",
-  "레이첼",
-  "뜬구름",
-  "죠형",
-  "마름모",
-  "쭈니",
-  "코카사이다",
-];
-const randomMessage = [
-  "진행이 너무 깔끔하네요!",
-  "화이트는 기본이니까",
-  "맞아요 순수!",
-  "룩에 맞춰서 골라 쓰기 좋지요",
-  "진짜 어떤 옷에도 깔끔하게 잘 어울릴 것 같아요",
-  "색이 너무 이뻐요",
-  "다른 컬러도 착용해주세요!",
-  "지금까지는 화사한 느낌이었다면 블랙은 시크한 느낌",
-  "좋아요!",
-  "이벤트 참여는 어떻게 하는거죠?",
-  "꾸미기 귀찮아하는 남성들에게 딱이겠네요",
-  "저희 남편한테 하나 사줘야 겠어요",
-  "데일리로 착용하기 간편한 제품!",
-];
-
 function Chattings({
-  // videoEL,
-  userNickname,
+  user,
   nosidebar = false,
-}: // room,
-// user,
-// socket,
-// size,
-// toggleChat,
-// toggleChatting,
-{
-  // videoEL: HTMLIFrameElement | HTMLVideoElement;
+}: {
+  user?: any;
   userNickname?: string;
   nosidebar?: boolean;
-  // room: any;
-  // user: any;
-  // socket: LiveSocket;
-  // size: { width: number; height: number };
-  // toggleChat: boolean;
-  // toggleChatting: Function;
 }) {
   const socket = useContext(LiveSocketContext);
-  const socketDispatch = useContext(LiveSocketDispatchContext);
   const locate = useLocation();
   const [chatList, setChatList] = useState<
     {
@@ -166,25 +109,7 @@ function Chattings({
   const [heart, setHeart] = useState(false);
   const [articleActive, setArticleActive] = useState(false);
   const chatRef = useRef<HTMLDivElement>();
-  // const [chatContent, setChatContent] = useState("");
-  // const inputRef = useRef<HTMLInputElement>();
   const [toggleChat, setToggleChat] = useState(false);
-
-  function autoDummyChat() {
-    setChattings((chattings) => [
-      ...chattings,
-      {
-        nickname:
-          randomUserName[Math.floor(Math.random() * randomUserName.length)],
-        content:
-          randomMessage[Math.floor(Math.random() * randomMessage.length)],
-        createdAt: Date.now(),
-      },
-    ]);
-    // setTimeout(() => {
-    //   autoDummyChat();
-    // }, Math.random() * 5000);
-  }
 
   const offArticleEffect = () => {
     setArticleActive(false);
@@ -197,20 +122,6 @@ function Chattings({
     });
   }, [chattings]);
 
-  useEffect(() => {
-    // autoDummyChat();
-    socket?.on(SIGNAL.CHAT, (type, origin, data) => {
-      setChattings((chattings) => [
-        ...chattings,
-        {
-          nickname: data.result.nickname,
-          content: data.result.message,
-          createdAt: Date.now(),
-        },
-      ]);
-    });
-  }, []);
-
   const handleClickHeart = (e: MouseEvent) => {
     setHeart(true);
     if (!articleActive) {
@@ -221,8 +132,16 @@ function Chattings({
 
   useEffect(() => {
     socket.on(SIGNAL.CHAT, (type, origin, data) => {
-      const message = data.result;
-      setChatList((chatList) => [...chatList, message]);
+      if (data.action === "send") {
+        setChatList((chattings) => [
+          ...chattings,
+          {
+            nickname: data.result.nickname,
+            content: data.result.content,
+            createdAt: Date.now(),
+          },
+        ]);
+      }
     });
   }, []);
 
@@ -230,11 +149,12 @@ function Chattings({
     if (inputRef.current) {
       if (!inputRef.current.value) return;
       const value = inputRef.current.value;
-
       // do something
+      console.log(user.nickname, user, value);
       socket.sendBinary(SIGNAL.CHAT, "send", {
-        nickname: locate.state?.nickname || userNickname,
+        nickname: user.nickname,
         content: value,
+        createdAt: +new Date(),
       });
 
       inputRef.current.value = "";
@@ -297,17 +217,7 @@ function Chattings({
             },
           }}>
           {chatList.map(({ nickname, content, createdAt }, i) => (
-            <Fade key={i} in timeout={1000}>
-              <Typography>
-                <Typography
-                  component='span'
-                  fontWeight={700}
-                  color={(theme) => theme.palette.grey[600]}>
-                  {nickname}
-                </Typography>
-                {content}
-              </Typography>
-            </Fade>
+            <ChatLine key={i} chat={{ nickname, content, createdAt }} />
           ))}
         </Box>
         {(nosidebar || toggleChat) && (
@@ -350,7 +260,6 @@ function Chattings({
               }}>
               <Avatar
                 alt='Remy Sharp'
-                src='/static/images/avatar/1.jpg'
                 sx={{
                   width: 50,
                   height: 50,

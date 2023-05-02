@@ -1,10 +1,9 @@
+import fs from "fs";
 import * as protobufjs from "protobufjs";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 import { manager } from "../model/Manager";
 import PublishManager from "../model/Publisher";
 import User from "../model/User";
-import fs from "fs";
-import path from "path";
 import { TEMP_PATH } from "../util/tool";
 
 const { Message } = protobufjs;
@@ -12,7 +11,7 @@ const { Message } = protobufjs;
 const publisher = new PublishManager(true);
 let chunkUploadCount = 0;
 
-export default function binaryHandler(
+export default async function binaryHandler(
   app: TemplatedApp,
   ws: uWS.WebSocket<unknown>,
   message: ArrayBuffer
@@ -33,7 +32,6 @@ export default function binaryHandler(
       if (base.action === "send") {
         publisher.manager.sendMe(ws, base);
       } else if (base.action === "send/link") {
-        console.log("🔗🔗🔗🔗🚀🚀🚀", base);
         const room = manager.rooms.findOneUserIn((ws as any).userId);
         const link = base.data.link;
         const desc = base.data.desc;
@@ -52,15 +50,17 @@ export default function binaryHandler(
       } else if (base.action === "like") {
         const user = manager.users.findOne((ws as any).userId);
         const room = manager.rooms.findOneUserIn(user.id);
-        const likes = room.addLike(user.id);
-        const wasLiked = user.addLikeRooms(room.id);
-        const likeCounter = room.likes.length;
-        publisher.manager.publishBinaryTo(app, ws, room.id, base, {
-          room,
-          likeCounter,
-          likes,
-          wasLiked,
-        });
+        if (room) {
+          const likes = room.addLike(user.id);
+          const wasLiked = user.addLikeRooms(room.id);
+          const likeCounter = room.likes.length;
+          publisher.manager.publishBinaryTo(app, ws, room.id, base, {
+            room,
+            likeCounter,
+            likes,
+            wasLiked,
+          });
+        }
       } else if (base.action === "find") {
         const room = manager.rooms.findOne(base.data.roomId);
         if (room) {
@@ -104,15 +104,15 @@ export default function binaryHandler(
         const room = manager.rooms.update(base.data.roomId, base.data);
         const rooms = manager.rooms.findAll();
         publisher.manager.publish(app, ws, base, { room, rooms });
-      } else if (base.action === "update/join") {
+      } else if (base.action === "join") {
         const room = manager.rooms.findOne(base.data.roomId);
+        const user = manager.users.findOne((ws as any).userId);
         if (room) {
           ws.subscribe(room.id);
-          const user = manager.users.findOne((ws as any).userId);
           room.join(user);
           publisher.manager.publishBinaryTo(app, ws, room.id, base, { room });
         }
-      } else if (base.action === "update/out") {
+      } else if (base.action === "out") {
         const room = manager.rooms.findOneUserIn((ws as any).userId);
         if (room) {
           ws.unsubscribe(room.id);
@@ -132,7 +132,11 @@ export default function binaryHandler(
       if (base.action === "send") {
         publisher.manager.sendMe(ws, base);
       } else if (base.action === "fetch") {
-        publisher.manager.sendMe(ws, base);
+        const user = manager.users.findOne((ws as any).userId);
+        if (user) {
+          console.log("✅✅✅✅✅✅✅✅ user", user);
+          publisher.manager.sendMe(ws, base, { user });
+        }
       } else if (base.action === "find") {
         publisher.manager.sendMe(ws, base);
       } else if (base.action === "create") {
@@ -143,11 +147,10 @@ export default function binaryHandler(
         room.join(new User((ws as any).userId));
         publisher.manager.sendMe(ws, base, { room, user });
       } else if (base.action === "update") {
-        console.log("update userid", (ws as any).userId);
         const room = manager.rooms.findOneUserIn((ws as any).userId);
+        const user = manager.users.update((ws as any).userId, base.data);
         if (room) {
-          const user = room.updateUser((ws as any).userId, base.data);
-          console.log(room, user);
+          // const user = room.updateUser((ws as any).userId, base.data);
           const rooms = manager.rooms.findAll();
           publisher.manager.publish(app, ws, base, { room, user, rooms });
         }
@@ -165,7 +168,7 @@ export default function binaryHandler(
           publisher.manager.publishBinaryTo(app, ws, room.id, base, {
             nickname: base.data.nickname,
             content: base.data.content,
-            createdAt: +new Date(),
+            createdAt: base.data.createdAt,
           });
         } else {
           publisher.manager.publishBinaryTo(app, ws, "global", base, {
@@ -182,13 +185,22 @@ export default function binaryHandler(
         if (room) {
           /* stream */
           const stream = base.data.stream;
+
           /* add stream */
-          room.addStream(base.data.stream);
+          const buffer = room.addStream(base.data.stream);
 
           /* file write stream */
-          // const filename = room.id + "-" + chunkUploadCount + ".webm";
-          // fs.writeFileSync(TEMP_PATH(room, filename), stream);
-          // chunkUploadCount++;
+          const filename = room.chunkUploadCount + ".webm";
+          const mp4Filename = room.chunkUploadCount + ".webm";
+
+          fs.writeFileSync(TEMP_PATH(room, filename), buffer);
+
+          console.log("buffer!", buffer);
+
+          const file = fs.readFileSync(TEMP_PATH(room, filename));
+          console.log("file!", file);
+
+          room.chunkUploadCount++;
 
           publisher.manager.sendMe(ws, base, {
             stream,

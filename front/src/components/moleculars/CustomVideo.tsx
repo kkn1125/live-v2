@@ -13,7 +13,9 @@ function CustomVideo({
       autoPlay
       playsInline
       controls
-      sx={{ width: "inherit", height: "100%" }}
+      preload='auto'
+      data-setup='{}'
+      sx={{ width: "inherit", height: "100%", backgroundSize: "contained" }}
     />
   );
 }

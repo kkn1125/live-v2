@@ -3,10 +3,12 @@
 import uWS from "uWebSockets.js";
 import messageHandler from "./service/MessageHandler";
 import { PORT } from "./util/global";
-import { dev } from "./util/tool";
+import { dev, TEMP_PATH } from "./util/tool";
 import * as protobufjs from "protobufjs";
 import { v4 } from "uuid";
 import { manager } from "./model/Manager";
+import fs from "fs";
+import path from "path";
 
 const { Field, Message } = protobufjs;
 
@@ -133,12 +135,35 @@ const app = uWS
     },
     close: (ws, code, message) => {
       console.log("WebSocket closed");
-      const room = manager.findRoomUserIn((ws as any).userId);
+      const room = manager.rooms.findOneUserIn((ws as any).userId);
       if (room) {
         manager.out(room.id, (ws as any).userId);
       }
       manager.users.delete((ws as any).userId);
     },
+  })
+  .get("/hls/*", (res, req) => {
+    const query = req.getQuery();
+    const queryObj = Object.fromEntries(
+      query.split("&").map((q) => q.split("="))
+    );
+    console.log(queryObj);
+    const room = manager.rooms.findOneUserIn(queryObj.userId);
+
+    try {
+      const file = fs.readFileSync(
+        path.join(
+          path.resolve(),
+          "tmp",
+          "41322d81-65f9-4220-8fc8-54ad0f3f3092",
+          queryObj.chunkIndex + ".webm"
+        )
+      );
+
+      res.end(file);
+    } catch (error) {
+      res.end(undefined);
+    }
   })
   .listen(PORT, (token) => {
     if (token) {

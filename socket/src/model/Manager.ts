@@ -43,23 +43,23 @@ export default class Manager {
   //   return deletedRoom;
   // }
 
-  findRoomUserIn(userId: string) {
-    const room = this.rooms.find((room) => room.findUser(userId));
-    return room;
-  }
+  // findRoomUserIn(userId: string) {
+  //   const room = this.rooms.find((room) => room.findUser(userId));
+  //   return room;
+  // }
 
   /* user interface */
-  findUser(userId: string) {
-    let findUser: User | undefined = undefined;
-    for (let room of this.rooms) {
-      const user = room.users.find((user) => user.id === userId);
-      if (user) {
-        findUser = user;
-        break;
-      }
-    }
-    return findUser;
-  }
+  // findUser(userId: string) {
+  //   let findUser: User | undefined = undefined;
+  //   for (let room of this.rooms) {
+  //     const user = room.users.find((user) => user.id === userId);
+  //     if (user) {
+  //       findUser = user;
+  //       break;
+  //     }
+  //   }
+  //   return findUser;
+  // }
 
   join(roomId: string, user: User) {
     const room = this.rooms.findOne(roomId);
