@@ -20,7 +20,6 @@ import { v4 } from "uuid";
 import Chattings from "../components/moleculars/Chattings";
 import CustomVideo from "../components/moleculars/CustomVideo";
 import LikeView from "../components/moleculars/LikeView";
-import LiveAddedLink from "../components/moleculars/LiveAddedLink";
 import LiveAddLink from "../components/moleculars/LiveAddLink";
 import MiniTip from "../components/moleculars/MiniTip";
 import {

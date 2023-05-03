@@ -5,12 +5,12 @@ import path from "path";
 
 export default defineConfig(({ command, mode, ssrBuild }) => {
   const env = loadEnv(mode, process.cwd(), "");
-
+  const MODE = process.env.NODE_ENV;
   dotenv.config({
     path: path.join(path.resolve(), ".env"),
   });
   dotenv.config({
-    path: path.join(path.resolve(), `.env.${mode}`),
+    path: path.join(path.resolve(), `.env.${MODE}`),
   });
 
   return {
