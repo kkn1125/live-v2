@@ -18,6 +18,7 @@ const answer = {
 };
 
 /* media codecs */
+// const CODEC = "video/mp4;codecs=vp9,opus";
 const CODEC = "video/webm;codecs=vp9,opus";
 
 /* live tools */

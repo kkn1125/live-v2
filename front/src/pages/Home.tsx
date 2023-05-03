@@ -1,5 +1,5 @@
 import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { v4 } from "uuid";
 import EnterAnswer from "../components/moleculars/EnterAnswer";
 import Chat from "../components/organisms/[x]Chat";
@@ -9,17 +9,25 @@ import {
 } from "../context/LiveSocketProvider";
 import LiveSocket from "../model/LiveSocket";
 import {
+  CODEC,
   DataLiveSocketEventListenerType,
   INTERCEPT,
   LIVE_SOCKET_ACTION,
   SIGNAL,
 } from "../util/global";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
+import Hls from "hls.js";
+import VideoJS from "../components/moleculars/VideoJS";
+import videojs from "video.js";
+import Player from "video.js/dist/types/player";
+
+const hls = new Hls({});
 
 function Home() {
   const [rooms, setRooms] = useState<any[]>([]);
   const socket = useContext(LiveSocketContext);
   const socketDispatch = useContext(LiveSocketDispatchContext);
+  const playerRef = useRef<HTMLVideoElement>();
 
   const roomHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
     if (data.action === "create") {
@@ -45,6 +53,29 @@ function Home() {
   };
 
   useEffect(() => {
+    console.log("MediaRecorder", CODEC, MediaRecorder.isTypeSupported(CODEC));
+    console.log("MediaSource", 'video/webm;codecs=vp9,opus', MediaSource.isTypeSupported('video/webm;codecs=vp9,opus'));
+    if (Hls.isSupported()) {
+      console.log("hello hls.js!");
+      // hls.loadSource(``);
+      // if (playerRef.current) {
+      //   if (playerRef.current.canPlayType("application/x-mpegurl")) {
+      //     console.log("supported!");
+
+      //     playerRef.current.src =
+      //       "http://localhost:3000/src/assets/videos/0.m3u8";
+      //   } else {
+      //     console.log("not supported!");
+      //     if (Hls.isSupported()) {
+      //       console.log("hls supported!");
+
+      //       hls.loadSource("http://localhost:3000/src/assets/videos/0.m3u8");
+      //       hls.attachMedia(playerRef.current);
+      //     }
+      //   }
+      // }
+    }
+
     socket.ifActivated(() => {
       socket.on(SIGNAL.ROOM, roomHandler);
       socket.on(SIGNAL.USER, userHandler);
@@ -58,8 +89,39 @@ function Home() {
     };
   }, []);
 
+  const videoJsOptions = {
+    autoplay: true,
+    controls: true,
+    responsive: true,
+    fluid: true,
+    sources: [
+      {
+        src: "/tuto/videos/sample720.m3u8",
+        type: "application/x-mpegurl",
+      },
+    ],
+    liveui: true,
+  };
+
+  const handlePlayerReady = (player: Player) => {
+    (playerRef.current as any) = player;
+
+    player.src("/tuto/videos/sample720.m3u8");
+
+    // You can handle player events here, for example:
+    // @ts-ignore
+    player.on("waiting", () => {
+      videojs.log("player is waiting");
+    });
+
+    // @ts-ignore
+    player.on("dispose", () => {
+      videojs.log("player will dispose");
+    });
+  };
+
   return (
-    <Stack>
+    <Stack sx={{ height: "100%" }}>
       {rooms.map((room, i) => (
         <Stack
           component={Paper}
@@ -97,6 +159,30 @@ function Home() {
           </EnterAnswer>
         </Stack>
       ))}
+      <Box
+        sx={{
+          height: "100%",
+        }}>
+        {/* <Box
+          component='video'
+          ref={playerRef}
+          autoPlay
+          playsInline
+          controls
+          preload='auto'
+          data-set='{}'
+          poster='https://www.tutorialspoint.com/videos/sample.png'
+        > */}
+          {/* <source
+            src='http://localhost:3000/src/assets/videos/0.mp4'
+            type='application/x-mpegurl'
+          /> */}
+        {/* </Box> */}
+        {/* <VideoJS
+          options={videoJsOptions}
+          onReady={handlePlayerReady}
+        /> */}
+      </Box>
     </Stack>
   );
 }

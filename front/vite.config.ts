@@ -24,6 +24,11 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
       port: Number(process.env.PORT) || 3000,
       cors: true,
       proxy: {
+        "/tuto": {
+          target: "https://www.tutorialspoint.com",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/tuto/, ""),
+        },
         "/hls": {
           target: "http://localhost:4000/hls",
           changeOrigin: true,

@@ -9,6 +9,7 @@ import {
 import Home from "./pages/Home";
 import LiveRoom from "./pages/LiveRoom";
 import NotFound from "./pages/NotFound";
+import RenewLiveRoom from "./pages/RenewLiveRoom";
 import ViewLiveRoom from "./pages/ViewLiveRoom";
 import { LIVE_SOCKET_ACTION } from "./util/global";
 
@@ -27,7 +28,7 @@ function App() {
   return (
     <Routes>
       <Route path='/live' element={<LiveLayout />}>
-        <Route path='' element={<LiveRoom />} />
+        <Route path='' element={<RenewLiveRoom />} />
         <Route path=':roomId' element={<ViewLiveRoom />} />
       </Route>
       <Route path='/' element={<Layout />}>

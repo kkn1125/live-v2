@@ -148,15 +148,22 @@ const app = uWS
       query.split("&").map((q) => q.split("="))
     );
     console.log(queryObj);
-    const room = manager.rooms.findOneUserIn(queryObj.userId);
-
+    // const room = manager.rooms.findOne(queryObj.roomId);
+    console.log(
+      path.join(
+        path.resolve(),
+        "tmp",
+        queryObj.roomId,
+        queryObj.chunkIndex + /* "0" + ".ts" */ ".ts"
+      )
+    );
     try {
       const file = fs.readFileSync(
         path.join(
           path.resolve(),
           "tmp",
-          "41322d81-65f9-4220-8fc8-54ad0f3f3092",
-          queryObj.chunkIndex + ".webm"
+          queryObj.roomId,
+          queryObj.chunkIndex + /* "0" + ".ts" */ ".ts"
         )
       );
 

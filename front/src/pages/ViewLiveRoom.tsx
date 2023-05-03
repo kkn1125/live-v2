@@ -57,6 +57,7 @@ function ViewLiveRoom() {
 
       mediaSource.onsourceopen = (e) => {
         videoBuffer = mediaSource.addSourceBuffer(CODEC);
+        videoBuffer.mode = "sequence";
       };
 
       setTimeout(() => {

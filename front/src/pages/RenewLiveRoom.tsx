@@ -13,6 +13,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import Hls from "hls.js";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 } from "uuid";
@@ -34,6 +35,8 @@ import {
 } from "../util/global";
 import { timerConvert } from "../util/tool";
 
+const hls = new Hls({});
+
 let mediaSource: MediaSource;
 let videoBuffer: SourceBuffer | undefined = undefined;
 let streamsChunk: ArrayBuffer[] = [];
@@ -46,7 +49,7 @@ let recordLoop: NodeJS.Timer;
 let chunkStreamLoop: NodeJS.Timer;
 let streamingTime: NodeJS.Timer;
 
-function RecordRoom() {
+function RenewLiveRoom() {
   const navigate = useNavigate();
   const [isLiveStart, setIsLiveStart] = useState(false);
   const [readyLive, setReadyLive] = useState(false);
@@ -92,36 +95,44 @@ function RecordRoom() {
       console.log("record");
     };
 
-    // mediaRecorder.onstop = async () => {
-    //   const stream = streamsChunk.splice(0, streamsChunk.length)[0];
+    mediaRecorder.onstop = async () => {
+      const stream = streamsChunk.splice(0, streamsChunk.length)[0];
 
-    //   if (videoBuffer) {
-    //     // const stream = streams[countDownloadChunk];
-    //     if (stream) {
-    //       console.log("get chunk", countDownloadChunk);
-    //       videoBuffer?.appendBuffer(stream);
-    //       socket.sendBinary(SIGNAL.STREAM, "send", {
-    //         stream: new Uint8Array(stream).toString(),
-    //       });
+      if (videoBuffer) {
+        // const stream = streams[countDownloadChunk];
+        if (stream) {
+          /* hls 테스트위해서 잠시 주석처리 */
+          console.log("get chunk", countDownloadChunk);
+          videoBuffer.appendBuffer(stream);
+          await socket.sendBinary(SIGNAL.STREAM, "send", {
+            stream: new Uint8Array(stream).toString(),
+          });
 
-    //       if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
-    //         setIsLive(false);
-    //       } else {
-    //         setIsLive(true);
-    //       }
+          if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
+            setIsLive(false);
+          } else {
+            setIsLive(true);
+          }
 
-    //       countDownloadChunk++;
-    //     }
-    //   }
-    // };
+          // hls.loadSource(
+          //   `/hls/?roomId=${roomInfo.roomId}&chunkIndex=${countDownloadChunk}`
+          // );
+
+          countDownloadChunk++;
+        }
+      }
+    };
 
     mediaRecorder.start();
 
-    recordLoop = /* setTimeout */setInterval(() => {
-      mediaRecorder.requestData();
-      // mediaRecorder.stop();
-      // registerRecord(stream);
-    }, 500);
+    recordLoop = setTimeout(
+      /* setInterval */ () => {
+        // mediaRecorder.requestData();
+        mediaRecorder.stop();
+        registerRecord(stream);
+      },
+      1000
+    );
   }
 
   const roomHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
@@ -158,6 +169,10 @@ function RecordRoom() {
   }, [roomInfo]);
 
   useEffect(() => {
+    // if (videoRef.current) {
+    //   hls.attachMedia(videoRef.current);
+    // }
+
     setRoomInfo((roomInfo) => Object.assign({ ...roomInfo }, { roomId: v4() }));
 
     mediaSource = new MediaSource();
@@ -234,27 +249,28 @@ function RecordRoom() {
     registerRecord(stream);
 
     videoBuffer = mediaSource.addSourceBuffer(CODEC);
+    videoBuffer.mode = "sequence";
 
-    chunkStreamLoop = setInterval(() => {
-      if (videoBuffer) {
-        const stream = streamsChunk[countDownloadChunk];
-        if (stream) {
-          console.log("get chunk", countDownloadChunk);
-          videoBuffer?.appendBuffer(stream);
-          socket.sendBinary(SIGNAL.STREAM, "send", {
-            stream: new Uint8Array(stream).toString(),
-          });
+    // chunkStreamLoop = setInterval(() => {
+    //   if (videoBuffer) {
+    //     const stream = streamsChunk[countDownloadChunk];
+    //     if (stream) {
+    //       console.log("get chunk", countDownloadChunk);
+    //       videoBuffer?.appendBuffer(stream);
+    //       socket.sendBinary(SIGNAL.STREAM, "send", {
+    //         stream: new Uint8Array(stream).toString(),
+    //       });
 
-          if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
-            setIsLive(false);
-          } else {
-            setIsLive(true);
-          }
+    //       if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
+    //         setIsLive(false);
+    //       } else {
+    //         setIsLive(true);
+    //       }
 
-          countDownloadChunk++;
-        }
-      }
-    }, 500);
+    //       countDownloadChunk++;
+    //     }
+    //   }
+    // }, 500);
 
     streamingTime = setInterval(() => {
       setLiveTime((liveTime) => liveTime + 1);
@@ -306,6 +322,7 @@ function RecordRoom() {
         cancelAnimationFrame(isStartedLive);
         connectSocket().then(() => {
           start().catch((e) => {
+            console.error("error!!!", e);
             socketDispatch({
               type: LIVE_SOCKET_ACTION.OUT,
               roomId: roomInfo.roomId,
@@ -564,4 +581,4 @@ function RecordRoom() {
   );
 }
 
-export default RecordRoom;
+export default RenewLiveRoom;

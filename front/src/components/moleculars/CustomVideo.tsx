@@ -14,8 +14,15 @@ function CustomVideo({
       playsInline
       controls
       preload='auto'
-      data-setup='{}'
-      sx={{ width: "inherit", height: "100%", backgroundSize: "contained" }}
+      // data-setup='{}'
+      sx={{
+        width: "100%",
+        // flex: 1,
+        height: "auto",
+        backgroundSize: "contained",
+        display: "flex",
+        flexDirection: "column",
+      }}
     />
   );
 }

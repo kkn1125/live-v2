@@ -12,7 +12,6 @@ function LiveAddedLink() {
 
   useEffect(() => {
     socket.on(SIGNAL.ROOM, (type, origin, data) => {
-      console.log("?????", data);
       if (data.action === "find") {
         const room = data.result.room;
         if (room) {

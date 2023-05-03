@@ -1,3 +1,4 @@
+import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import * as protobufjs from "protobufjs";
 import uWS, { TemplatedApp } from "uWebSockets.js";
@@ -190,17 +191,51 @@ export default async function binaryHandler(
           const buffer = room.addStream(base.data.stream);
 
           /* file write stream */
-          const filename = room.chunkUploadCount + ".webm";
-          const mp4Filename = room.chunkUploadCount + ".webm";
+          const filename = "stream_" + room.chunkUploadCount + ".webm";
+          const mp4Filename = "stream_" + room.chunkUploadCount + ".mp4";
+          const m3u8Filename = "stream_" + room.chunkUploadCount + ".m3u8";
+          const tsFilename = "stream_.ts";
 
-          fs.writeFileSync(TEMP_PATH(room, filename), buffer);
+          // const mp4Stream = fs.createWriteStream(TEMP_PATH(room, mp4Filename));
+          // const m3u8Stream = fs.createWriteStream(
+          //   TEMP_PATH(room, m3u8Filename)
+          // );
+          // const tsStream = fs.createWriteStream(TEMP_PATH(room, tsFilename));
 
-          console.log("buffer!", buffer);
-
-          const file = fs.readFileSync(TEMP_PATH(room, filename));
-          console.log("file!", file);
+          /* mp4 encoding */
+          // fs.writeFileSync(TEMP_PATH(room, filename), buffer);
+          // ffmpeg(TEMP_PATH(room, filename))
+          //   .output(TEMP_PATH(room, mp4Filename))
+          //   // .output(mp4Stream)
+          //   // .input(TEMP_PATH(room, mp4Filename))
+          //   // .output(TEMP_PATH(room, m3u8Filename))
+          //   // .input(TEMP_PATH(room, m3u8Filename))
+          //   // .output(TEMP_PATH(room, tsFilename))
+          //   .on("end", function () {
+          //     console.log("Finished processing for mp4");
+          //     ffmpeg(TEMP_PATH(room, mp4Filename))
+          //       .output(TEMP_PATH(room, m3u8Filename))
+          //       // .output(m3u8Stream)
+          //       .on("end", function () {
+          //         console.log("Finished processing for m3u8");
+          //         ffmpeg(TEMP_PATH(room, m3u8Filename))
+          //           .output(TEMP_PATH(room, tsFilename))
+          //           // .output(tsStream)
+          //           .on("end", function () {
+          //             console.log("Finished processing for ts");
+          //           })
+          //           .run();
+          //       })
+          //       .run();
+          //   })
+          //   .run();
 
           room.chunkUploadCount++;
+
+          // console.log("buffer!", buffer);
+
+          // const file = fs.readFileSync(TEMP_PATH(room, filename));
+          // console.log("file!", file);
 
           publisher.manager.sendMe(ws, base, {
             stream,
