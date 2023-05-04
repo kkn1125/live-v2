@@ -99,14 +99,23 @@ function ViewLiveRoom() {
                   setLoading(() => false);
                 }
                 // console.log(videoRef.current?.currentTime);
-                if (
+
+                const isLivePoint = !(
                   (videoRef.current?.currentTime || 0) + 5 <
-                  streamPoint / 2
-                ) {
-                  setIsLive(false);
-                } else {
-                  setIsLive(true);
-                }
+                  streamPoint
+                );
+                console.log((videoRef.current?.currentTime || 0) + 5);
+                console.log(streamPoint);
+                setIsLive(isLivePoint);
+
+                // if (
+                //   (videoRef.current?.currentTime || 0) + 5 <
+                //   streamPoint / 2
+                // ) {
+                //   setIsLive(false);
+                // } else {
+                //   setIsLive(true);
+                // }
                 countDownloadChunk++;
               }
             } catch (e: any) {
@@ -203,6 +212,10 @@ function ViewLiveRoom() {
       // 현재는 리로드하면 페이지 홈으로 가도록 설정
     });
 
+    window.addEventListener("beforeunload", () => {
+      outRoom();
+    });
+
     return () => {
       clearInterval(chunkFetchStreamLoop);
       clearInterval(chunkDownloadStreamLoop);
@@ -210,10 +223,7 @@ function ViewLiveRoom() {
       countDownloadChunk = 0;
       streamPoint = 0;
       streams = [];
-      socketDispatch({
-        type: LIVE_SOCKET_ACTION.OUT,
-        roomId: params.roomId,
-      });
+      outRoom();
       socket.off(SIGNAL.ROOM);
       socket.off(SIGNAL.STREAM);
       socket.off(SIGNAL.USER);
@@ -221,6 +231,13 @@ function ViewLiveRoom() {
       socket.off(INTERCEPT.CLOSE);
     };
   }, []);
+
+  function outRoom() {
+    socketDispatch({
+      type: LIVE_SOCKET_ACTION.OUT,
+      roomId: params.roomId,
+    });
+  }
 
   const handleClosePopup = (e: MouseEvent) => {
     navigate("/");

@@ -106,12 +106,18 @@ function RenewLiveRoom() {
           await socket.sendBinary(SIGNAL.STREAM, "send", {
             stream: new Uint8Array(stream).toString(),
           });
-
-          if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
-            setIsLive(false);
-          } else {
-            setIsLive(true);
-          }
+          const isLivePoint = !(
+            (videoRef.current?.currentTime || 0) + 5 <
+            streamPoint
+          );
+          setIsLive(isLivePoint);
+          console.log((videoRef.current?.currentTime || 0) + 5);
+          console.log(streamPoint);
+          // if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
+          //   setIsLive(isLivePoint);
+          // } else {
+          //   setIsLive(true);
+          // }
 
           // hls.loadSource(
           //   `/hls/?roomId=${roomInfo.roomId}&chunkIndex=${countDownloadChunk}`

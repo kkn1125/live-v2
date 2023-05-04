@@ -1,6 +1,10 @@
 import path from "path";
 import type Room from "../model/Room";
 
+const MODE = process.env.NODE_ENV || "production";
+
+const IS_DEV = MODE === "development";
+
 const dev = function (this: Console) {
   let prefix = "";
   return Object.assign(
@@ -11,7 +15,7 @@ const dev = function (this: Console) {
           : [
               k,
               (...args: any[]) => {
-                v.call(this, prefix, ...args);
+                (IS_DEV ? v : () => {}).call(this, prefix, ...args);
                 prefix = "";
               },
             ]
