@@ -17,6 +17,8 @@ const answer = {
   enter: "입장",
 };
 
+const streaminRecordInterval = 500;
+
 /* media codecs */
 // const CODEC = "video/mp4;codecs=vp9,opus";
 const CODEC = "video/webm;codecs=vp9,opus";
@@ -66,6 +68,7 @@ type LiveSocketBasicActionType =
 type LiveSocketSpecialActionType =
   | "create"
   | "delete"
+  | `delete/${"link"}`
   | "find"
   | "update"
   | "join"
@@ -107,6 +110,7 @@ type LiveSocketEventListenerType =
 
 export {
   answer,
+  streaminRecordInterval,
   //
   APP_AUTHOR,
   APP_BRAND_NAME,

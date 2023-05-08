@@ -1,27 +1,16 @@
-import { Stack, Box, Typography, keyframes, Button, Chip } from "@mui/material";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import Toolbar from "@mui/material/Toolbar";
-import axios from "axios";
-import Hls from "hls.js";
-import { MouseEvent, useState, useRef, useEffect, useContext } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useContext, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   LiveSocketContext,
   LiveSocketDispatchContext,
 } from "../../context/LiveSocketProvider";
-import LiveSocket from "../../model/LiveSocket";
-import { INTERCEPT, SIGNAL } from "../../util/global";
-import { convertUrlString } from "../../util/tool";
-import BottomBar from "../moleculars/BottomBar";
-import Chattings from "../moleculars/Chattings";
 import LiveAddedLink from "../moleculars/LiveAddedLink";
 import LiveToolBar from "../moleculars/LiveToolBar";
 import MiniTip from "../moleculars/MiniTip";
-import PopupModal from "../moleculars/PopupModal";
 import SlideTitle from "../moleculars/SlideTitle";
-import Chat from "../organisms/[x]Chat";
-
-// new Hls()
-console.log(Hls.isSupported());
+import ViewerChatBox from "../moleculars/ViewerChatBox";
 
 type URLs = string[];
 
@@ -128,7 +117,7 @@ function LiveCommerceLayout({
 
           <Box sx={{ zIndex: 100 }}>
             <LiveAddedLink />
-            <Chattings user={user} />
+            <ViewerChatBox user={user} />
           </Box>
 
           <Box

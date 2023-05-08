@@ -1,3 +1,5 @@
+import uWS from "uWebSockets.js";
+
 export type UserRole = "admin" | "viewer";
 
 export default class User {
@@ -8,6 +10,8 @@ export default class User {
   role: UserRole;
   video: boolean = true;
   audio: boolean = true;
+
+  socket?: uWS.WebSocket<unknown>;
 
   likeRooms: string[] = [];
 

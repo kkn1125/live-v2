@@ -1,5 +1,4 @@
 import { Fade, Stack, Typography } from "@mui/material";
-import React from "react";
 
 export type ChatLineType = {
   nickname: string;
@@ -10,15 +9,17 @@ export type ChatLineType = {
 function ChatLine({ chat }: { chat: ChatLineType }) {
   return (
     <Fade in timeout={1000}>
-      <Typography>
+      <Stack direction='row' gap={1}>
         <Typography
           component='span'
           fontWeight={700}
           color={(theme) => theme.palette.grey[600]}>
           {chat.nickname}
         </Typography>
-        {chat.content}
-      </Typography>
+        <Typography sx={{ color: "inherit", wordBreak: "break-all" }}>
+          {chat.content}
+        </Typography>
+      </Stack>
     </Fade>
   );
 }

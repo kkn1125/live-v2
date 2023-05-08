@@ -11,7 +11,13 @@ import {
   LiveSocketContext,
   LiveSocketDispatchContext,
 } from "../context/LiveSocketProvider";
-import { CODEC, INTERCEPT, LIVE_SOCKET_ACTION, SIGNAL } from "../util/global";
+import {
+  CODEC,
+  INTERCEPT,
+  LIVE_SOCKET_ACTION,
+  SIGNAL,
+  streaminRecordInterval,
+} from "../util/global";
 
 let mediaSource: MediaSource;
 let videoBuffer: SourceBuffer | undefined = undefined;
@@ -21,6 +27,7 @@ let countDownloadChunk = 0;
 let chunkFetchStreamLoop: NodeJS.Timer;
 let chunkDownloadStreamLoop: NodeJS.Timer;
 let streamPoint = 0;
+let startPoint = 0;
 
 const config = {
   fragLoadingTimeOut: 10000,
@@ -65,7 +72,7 @@ function ViewLiveRoom() {
           socket.sendBinary(SIGNAL.STREAM, "fetch", {
             chunkIndex: countDownloadChunk,
           });
-        }, 50);
+        }, streaminRecordInterval);
         // try {
         //   hlsVideo.loadSource(
         //     `/hls/?roomId=41322d81-65f9-4220-8fc8-54ad0f3f3092&chunkIndex=${countDownloadChunk}`
@@ -79,6 +86,12 @@ function ViewLiveRoom() {
         if (data.action === "fetch") {
           const stream = data.result.stream;
           streamPoint = Number(data.result.streamPoint);
+
+          /* real-time video seeking point */
+          if (countDownloadChunk === 0) {
+            startPoint = countDownloadChunk = streamPoint - 1;
+          }
+
           if (stream && streamPoint !== countDownloadChunk) {
             const streamBuffer = new Uint8Array(
               stream.split(",").map((s) => Number(s))
@@ -88,8 +101,8 @@ function ViewLiveRoom() {
 
               if (videoBuffer && !videoBuffer?.updating) {
                 videoBuffer.appendBuffer(streamBuffer);
-                console.log(`loaded ${countDownloadChunk} stream`);
-                console.log(streamPoint, countDownloadChunk);
+                // console.log(`loaded ${countDownloadChunk} stream`);
+                console.log(streamPoint, countDownloadChunk, startPoint);
                 setPercentage((countDownloadChunk / streamPoint) * 100);
                 if (streamPoint > countDownloadChunk + 5) {
                   console.log("no live");
@@ -99,24 +112,17 @@ function ViewLiveRoom() {
                   setLoading(() => false);
                 }
                 // console.log(videoRef.current?.currentTime);
+                countDownloadChunk++;
 
+                const timeIntervalRatio = 1000 / streaminRecordInterval;
+                const currentTimeGap = (videoRef.current?.currentTime || 0) + 5;
                 const isLivePoint = !(
-                  (videoRef.current?.currentTime || 0) + 5 <
-                  streamPoint
+                  currentTimeGap + startPoint / timeIntervalRatio <
+                  streamPoint / timeIntervalRatio
                 );
-                console.log((videoRef.current?.currentTime || 0) + 5);
+                console.log(currentTimeGap);
                 console.log(streamPoint);
                 setIsLive(isLivePoint);
-
-                // if (
-                //   (videoRef.current?.currentTime || 0) + 5 <
-                //   streamPoint / 2
-                // ) {
-                //   setIsLive(false);
-                // } else {
-                //   setIsLive(true);
-                // }
-                countDownloadChunk++;
               }
             } catch (e: any) {
               console.log(e.status);
@@ -131,8 +137,16 @@ function ViewLiveRoom() {
       });
 
       socket.on(SIGNAL.ROOM, (type, origin, data) => {
-        if (data.action === "join" || data.action === "out") {
+        if (data.action === "join") {
           setRoom((room) => data.result.room);
+        } else if (data.action === "out") {
+          if (
+            data.result.room.users.some((roomUser) => roomUser.id === user.id)
+          ) {
+            setRoom((room) => data.result.room);
+          } else {
+            setIsWrongPath(() => true);
+          }
         }
       });
 

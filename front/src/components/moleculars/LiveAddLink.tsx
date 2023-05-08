@@ -6,19 +6,21 @@ import { SIGNAL } from "../../util/global";
 import LiveAddedLink from "./LiveAddedLink";
 
 function LiveAddLink() {
-  const linkDescRef = useRef<HTMLInputElement>();
+  const descRef = useRef<HTMLInputElement>();
   const linkRef = useRef<HTMLInputElement>();
   const socket = useContext(LiveSocketContext);
 
   function handleAddLink() {
-    const linkDescEl = linkDescRef.current as HTMLInputElement;
+    const descEl = descRef.current as HTMLInputElement;
     const linkEl = linkRef.current as HTMLInputElement;
+
+    if (!(linkEl.value && descEl.value)) return;
     socket.sendBinary(SIGNAL.ROOM, "send/link", {
       link: linkEl.value,
-      desc: linkDescEl.value,
+      desc: descEl.value,
     });
     linkEl.value = "";
-    linkDescEl.value = "";
+    descEl.value = "";
   }
 
   function handleAddLinkEnter(e: React.KeyboardEvent) {
@@ -29,7 +31,7 @@ function LiveAddLink() {
 
   return (
     <Box sx={{ flex: 1 }}>
-      <LiveAddedLink />
+      <LiveAddedLink admin />
       <Typography fontSize={20} fontWeight={700}>
         🔗 링크 등록
       </Typography>
@@ -39,7 +41,7 @@ function LiveAddLink() {
             팝업 내용
           </Typography>
           <TextField
-            inputRef={linkDescRef}
+            inputRef={descRef}
             size='small'
             fullWidth
             sx={{

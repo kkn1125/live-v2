@@ -20,6 +20,7 @@ import Hls from "hls.js";
 import VideoJS from "../components/moleculars/VideoJS";
 import videojs from "video.js";
 import Player from "video.js/dist/types/player";
+import PopupSlide from "../components/moleculars/PopupSlide";
 
 const hls = new Hls({});
 
@@ -54,7 +55,11 @@ function Home() {
 
   useEffect(() => {
     console.log("MediaRecorder", CODEC, MediaRecorder.isTypeSupported(CODEC));
-    console.log("MediaSource", 'video/webm;codecs=vp9,opus', MediaSource.isTypeSupported('video/webm;codecs=vp9,opus'));
+    console.log(
+      "MediaSource",
+      "video/webm;codecs=vp9,opus",
+      MediaSource.isTypeSupported("video/webm;codecs=vp9,opus")
+    );
     if (Hls.isSupported()) {
       console.log("hello hls.js!");
       // hls.loadSource(``);
@@ -159,6 +164,13 @@ function Home() {
           </EnterAnswer>
         </Stack>
       ))}
+      {/* <PopupSlide
+        links={[
+          { link: "test1", desc: "wow1" },
+          { link: "test2", desc: "wow2" },
+          { link: "test3", desc: "wow3" },
+        ]}
+      /> */}
       <Box
         sx={{
           height: "100%",
@@ -173,7 +185,7 @@ function Home() {
           data-set='{}'
           poster='https://www.tutorialspoint.com/videos/sample.png'
         > */}
-          {/* <source
+        {/* <source
             src='http://localhost:3000/src/assets/videos/0.mp4'
             type='application/x-mpegurl'
           /> */}

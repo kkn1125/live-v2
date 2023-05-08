@@ -5,7 +5,7 @@ import uWS, { TemplatedApp } from "uWebSockets.js";
 import { manager } from "../model/Manager";
 import PublishManager from "../model/Publisher";
 import User from "../model/User";
-import { TEMP_PATH } from "../util/tool";
+import { saveFilesAsEncode, TEMP_PATH } from "../util/tool";
 
 const { Message } = protobufjs;
 
@@ -36,15 +36,9 @@ export default async function binaryHandler(
         const room = manager.rooms.findOneUserIn((ws as any).userId);
         const link = base.data.link;
         const desc = base.data.desc;
-        room.setLink(link);
-        room.setLinkDesc(desc);
-        publisher.manager.sendMe(ws, { ...base }, { room, link, desc });
-        publisher.manager.sendOther(
-          ws,
-          room.id,
-          { ...base },
-          { room, link, desc }
-        );
+        room.setLink(link, desc);
+        publisher.manager.sendMe(ws, { ...base }, { room });
+        publisher.manager.sendOther(ws, room.id, { ...base }, { room });
       } else if (base.action === "fetch") {
         const rooms = manager.rooms.findAll();
         publisher.manager.sendMe(ws, base, { rooms });
@@ -65,9 +59,7 @@ export default async function binaryHandler(
       } else if (base.action === "find") {
         const room = manager.rooms.findOne(base.data.roomId);
         if (room) {
-          const link = room.link;
-          const desc = room.linkDesc;
-          publisher.manager.sendMe(ws, base, { room, link, desc });
+          publisher.manager.sendMe(ws, base, { room });
         }
       } else if (base.action === "create") {
         const room = manager.rooms.insert(base.data.roomId);
@@ -100,7 +92,7 @@ export default async function binaryHandler(
           wrtStream.end();
         });
 
-        publisher.manager.publish(app, ws, base, { rooms });
+        publisher.manager.publish(app, ws, base, { room, rooms });
       } else if (base.action === "update") {
         const room = manager.rooms.update(base.data.roomId, base.data);
         const rooms = manager.rooms.findAll();
@@ -114,10 +106,21 @@ export default async function binaryHandler(
           publisher.manager.publishBinaryTo(app, ws, room.id, base, { room });
         }
       } else if (base.action === "out") {
-        const room = manager.rooms.findOneUserIn((ws as any).userId);
+        const targetUser = base.data.userId || (ws as any).userId;
+        const targetRoom = base.data.roomId;
+        const room = targetRoom
+          ? manager.rooms.findOne(targetRoom)
+          : manager.rooms.findOneUserIn(targetUser);
         if (room) {
-          ws.unsubscribe(room.id);
-          manager.out(room.id, (ws as any).userId);
+          if (base.data.userId) {
+            const user = manager.users.findOne(base.data.userId);
+            if (user) {
+              user.socket.unsubscribe(room.id);
+            }
+          } else {
+            ws.unsubscribe(room.id);
+          }
+          manager.out(room.id, targetUser);
           publisher.manager.publishBinaryTo(app, ws, room.id, base, { room });
         }
       } else if (base.action === "delete") {
@@ -127,6 +130,12 @@ export default async function binaryHandler(
           rooms,
           roomId: base.data.roomId,
         });
+      } else if (base.action === "delete/link") {
+        const room = manager.rooms.findOneUserIn((ws as any).userId);
+        const link = base.data.link;
+        const desc = base.data.desc;
+        room.deleteLink(link, desc);
+        publisher.manager.publish(app, ws, base, { room });
       }
       break;
     case "SIGNAL/USER":
@@ -135,7 +144,6 @@ export default async function binaryHandler(
       } else if (base.action === "fetch") {
         const user = manager.users.findOne((ws as any).userId);
         if (user) {
-          console.log("✅✅✅✅✅✅✅✅ user", user);
           publisher.manager.sendMe(ws, base, { user });
         }
       } else if (base.action === "find") {
@@ -190,49 +198,9 @@ export default async function binaryHandler(
           /* add stream */
           const buffer = room.addStream(base.data.stream);
 
-          /* file write stream */
-          const filename = "stream_" + room.chunkUploadCount + ".webm";
-          const mp4Filename = "stream_" + room.chunkUploadCount + ".mp4";
-          const m3u8Filename = "stream_" + room.chunkUploadCount + ".m3u8";
-          const tsFilename = "stream_.ts";
-
-          // const mp4Stream = fs.createWriteStream(TEMP_PATH(room, mp4Filename));
-          // const m3u8Stream = fs.createWriteStream(
-          //   TEMP_PATH(room, m3u8Filename)
-          // );
-          // const tsStream = fs.createWriteStream(TEMP_PATH(room, tsFilename));
-
-          /* mp4 encoding */
-          // fs.writeFileSync(TEMP_PATH(room, filename), buffer);
-          // ffmpeg(TEMP_PATH(room, filename))
-          //   .output(TEMP_PATH(room, mp4Filename))
-          //   // .output(mp4Stream)
-          //   // .input(TEMP_PATH(room, mp4Filename))
-          //   // .output(TEMP_PATH(room, m3u8Filename))
-          //   // .input(TEMP_PATH(room, m3u8Filename))
-          //   // .output(TEMP_PATH(room, tsFilename))
-          //   .on("end", function () {
-          //     console.log("Finished processing for mp4");
-          //     ffmpeg(TEMP_PATH(room, mp4Filename))
-          //       .output(TEMP_PATH(room, m3u8Filename))
-          //       // .output(m3u8Stream)
-          //       .on("end", function () {
-          //         console.log("Finished processing for m3u8");
-          //         ffmpeg(TEMP_PATH(room, m3u8Filename))
-          //           .output(TEMP_PATH(room, tsFilename))
-          //           // .output(tsStream)
-          //           .on("end", function () {
-          //             console.log("Finished processing for ts");
-          //           })
-          //           .run();
-          //       })
-          //       .run();
-          //   })
-          //   .run();
+          saveFilesAsEncode({ room, buffer, prefix: "stream" });
 
           room.chunkUploadCount++;
-
-          // console.log("buffer!", buffer);
 
           // const file = fs.readFileSync(TEMP_PATH(room, filename));
           // console.log("file!", file);

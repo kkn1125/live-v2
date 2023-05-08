@@ -6,6 +6,7 @@ import {
   Button,
   Chip,
   Divider,
+  IconButton,
   MenuItem,
   Select,
   SelectChangeEvent,
@@ -22,6 +23,8 @@ import CustomVideo from "../components/moleculars/CustomVideo";
 import LikeView from "../components/moleculars/LikeView";
 import LiveAddLink from "../components/moleculars/LiveAddLink";
 import MiniTip from "../components/moleculars/MiniTip";
+import StreamerChatInput from "../components/moleculars/StreamerChatBox";
+import UserItem from "../components/moleculars/UserItem";
 import {
   LiveSocketContext,
   LiveSocketDispatchContext,
@@ -31,6 +34,7 @@ import {
   DataLiveSocketEventListenerType,
   LIVE_SOCKET_ACTION,
   SIGNAL,
+  streaminRecordInterval,
 } from "../util/global";
 import { timerConvert } from "../util/tool";
 
@@ -43,6 +47,7 @@ let countUploadChunk = 0;
 let countDownloadChunk = 0;
 let isStartedLive: number;
 let streamPoint = 0;
+let startPoint = 0;
 
 let recordLoop: NodeJS.Timer;
 let chunkStreamLoop: NodeJS.Timer;
@@ -77,6 +82,7 @@ function RenewLiveRoom() {
   const [link, setLink] = useState("");
   const [desc, setDesc] = useState("");
   const [user, setUser] = useState<any>({});
+  const [copied, setCopied] = useState(false);
 
   function registerRecord(stream: MediaStream) {
     const mediaRecorder = new MediaRecorder(stream, {
@@ -85,8 +91,8 @@ function RenewLiveRoom() {
       // videoBitsPerSecond: 500,
       // audioBitsPerSecond: 500,
     });
-    console.log("register");
     mediaRecorder.ondataavailable = async (data) => {
+      console.log("register");
       const mediaArrayBuffer = await data.data.arrayBuffer();
       console.log("add chunk", countUploadChunk);
       streamsChunk.push(mediaArrayBuffer);
@@ -100,29 +106,29 @@ function RenewLiveRoom() {
       if (videoBuffer) {
         // const stream = streams[countDownloadChunk];
         if (stream) {
+          /* 
+            real-time video seeking point
+            필요한가?
+           */
+          if (countDownloadChunk === 0) {
+            startPoint = countDownloadChunk = streamPoint - 1;
+          }
+
           /* hls 테스트위해서 잠시 주석처리 */
           console.log("get chunk", countDownloadChunk);
           videoBuffer.appendBuffer(stream);
           await socket.sendBinary(SIGNAL.STREAM, "send", {
             stream: new Uint8Array(stream).toString(),
           });
+          const timeIntervalRatio = 1000 / streaminRecordInterval;
+          const currentTimeGap = (videoRef.current?.currentTime || 0) + 5;
           const isLivePoint = !(
-            (videoRef.current?.currentTime || 0) + 5 <
-            streamPoint
+            currentTimeGap <
+            streamPoint / timeIntervalRatio
           );
           setIsLive(isLivePoint);
-          console.log((videoRef.current?.currentTime || 0) + 5);
+          console.log(currentTimeGap);
           console.log(streamPoint);
-          // if ((videoRef.current?.currentTime || 0) + 5 < streamPoint / 2) {
-          //   setIsLive(isLivePoint);
-          // } else {
-          //   setIsLive(true);
-          // }
-
-          // hls.loadSource(
-          //   `/hls/?roomId=${roomInfo.roomId}&chunkIndex=${countDownloadChunk}`
-          // );
-
           countDownloadChunk++;
         }
       }
@@ -136,7 +142,7 @@ function RenewLiveRoom() {
         mediaRecorder.stop();
         registerRecord(stream);
       },
-      1000
+      streaminRecordInterval
     );
   }
 
@@ -153,6 +159,7 @@ function RenewLiveRoom() {
 
   const userHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
     if (data.action === "update" || data.action === "fetch") {
+      setRoom((room) => data.result.room);
       setUser((user) => data.result.user);
     }
   };
@@ -279,7 +286,7 @@ function RenewLiveRoom() {
 
     streamingTime = setInterval(() => {
       setLiveTime((liveTime) => liveTime + 1);
-    }, 1000);
+    }, streaminRecordInterval);
   }
 
   function handleStartTime(
@@ -345,7 +352,7 @@ function RenewLiveRoom() {
 
   function handleSeekToLive() {
     if (videoRef.current) {
-      videoRef.current.currentTime = streamPoint;
+      videoRef.current.currentTime = streamPoint * 2;
     }
   }
 
@@ -360,6 +367,17 @@ function RenewLiveRoom() {
       )
     );
   }
+
+  function handleCopyToClipboard(link: string) {
+    navigator.clipboard.writeText(link);
+    setCopied((copied) => true);
+    setTimeout(() => {
+      setCopied((copied) => false);
+    }, 3000);
+  }
+
+  const roomLink =
+    location.origin + location.pathname + "/" + (roomInfo.roomId || "");
 
   return (
     <Stack>
@@ -432,25 +450,52 @@ function RenewLiveRoom() {
                 )}
               </Stack>
             </Stack>
+            {isLiveStart && (
+              <Stack>
+                <Box sx={{ flex: 1 }}>
+                  <StreamerChatInput user={user} />
+                </Box>
+              </Stack>
+            )}
           </Stack>
         </Stack>
         {isLiveStart ? (
-          <Stack
-            sx={{
-              flex: 1,
-            }}>
+          <Stack gap={3}>
             {isLiveStart && (
-              <Typography>
-                {location.origin +
-                  location.pathname +
-                  "/" +
-                  (roomInfo.roomId || "")}
-              </Typography>
+              <Stack direction='row' gap={1} alignItems='center'>
+                <Chip
+                  size='small'
+                  color={"primary"}
+                  component='span'
+                  label={(copied ? "✅" : "") + roomLink}
+                />
+                <IconButton
+                  size='small'
+                  color={copied ? "success" : "info"}
+                  onClick={
+                    !copied ? () => handleCopyToClipboard(roomLink) : () => {}
+                  }
+                  sx={{
+                    backgroundColor: "#ffffff25",
+                  }}>
+                  {!copied ? "📋" : "✅"}
+                </IconButton>
+              </Stack>
             )}
             <LiveAddLink />
-            <Box sx={{ flex: 1 }}>
-              <Chattings user={user} />
-            </Box>
+            {/* users list */}
+            <Stack
+              gap={1}
+              sx={{
+                flex: 1,
+                backgroundColor: "#ffffff56",
+                borderRadius: 1,
+                p: 2,
+              }}>
+              {room?.users?.map((user, i) => (
+                <UserItem key={i} user={user} />
+              ))}
+            </Stack>
           </Stack>
         ) : (
           <Stack

@@ -1,5 +1,16 @@
 import User from "./User";
 
+type Link = {
+  link: string;
+  desc: string;
+};
+
+type Chat = {
+  userId: string;
+  content: string;
+  createdAt: number;
+};
+
 export type RoomUpdateType = {
   id?: string;
   title: string;
@@ -7,12 +18,19 @@ export type RoomUpdateType = {
   category: string;
   tags: string[];
   streams?: ArrayBuffer[];
+
+  links: Link[];
+  likes: string[];
+  views: number;
+
+  chunkUploadCount: number;
+
+  /* room users */
   admin: User;
   users?: User[];
   limit: number;
 
-  chunkUploadCount: number;
-
+  /* room log */
   createdAt?: number;
   updatedAt?: number;
 };
@@ -25,8 +43,11 @@ export default class Room {
   category: string = "";
   tags: string[] = [];
   streams: ArrayBuffer[] = [];
-  link: string = "";
-  linkDesc: string = "";
+
+  /* FEAT: 채팅 모든 내용 불러오려면 해당 기능 개발 필요 */
+  chatLogs: Chat[] = [];
+
+  links: Link[] = [];
   likes: string[] = [];
   views: number = 0;
 
@@ -58,11 +79,18 @@ export default class Room {
     user.setRole("admin");
   }
 
-  setLink(link: string) {
-    this.link = link;
+  setLink(link: string, desc: string) {
+    this.links.push({ link, desc });
   }
-  setLinkDesc(linkDesc: string) {
-    this.linkDesc = linkDesc;
+
+  deleteLink(link: string, desc: string) {
+    const index = this.links.findIndex(
+      (roomLink) => roomLink.link === link && roomLink.desc === desc
+    );
+    if (index > -1) {
+      return this.links.splice(index, 1);
+    }
+    return undefined;
   }
 
   setTitle(title: string) {

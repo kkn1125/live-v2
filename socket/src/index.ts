@@ -123,7 +123,8 @@ const app = uWS
       // ws.subscribe((ws as any).roomId);
       ws.subscribe((ws as any).userId);
       /* 유저 생성 */
-      manager.users.insert((ws as any).userId);
+      const me = manager.users.insert((ws as any).userId);
+      me.socket = ws;
       console.log("A WebSocket connected with URL: " + (ws as any).url);
     },
     message: (ws, message, isBinary) => {

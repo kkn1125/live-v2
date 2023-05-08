@@ -1,13 +1,12 @@
-import { Box, Typography } from "@mui/material";
-import React, { useContext, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useContext, useEffect, useState } from "react";
 import { LiveSocketContext } from "../../context/LiveSocketProvider";
 import { SIGNAL } from "../../util/global";
+import PopupList from "./PopupList";
+import PopupSlide from "./PopupSlide";
 
-function LiveAddedLink() {
+function LiveAddedLink({ admin = false }: { admin?: boolean }) {
   const [room, setRoom] = useState<any>({});
-  const [link, setLink] = useState("");
-  const [desc, setDesc] = useState("");
+  const [links, setLinks] = useState<any>([]);
   const socket = useContext(LiveSocketContext);
 
   useEffect(() => {
@@ -15,13 +14,16 @@ function LiveAddedLink() {
       if (data.action === "find") {
         const room = data.result.room;
         if (room) {
-          setRoom((room) => room);
-          setLink((link) => room.link);
-          setDesc((desc) => room.linkDesc);
+          setRoom(() => room);
+          setLinks((link) => room.links);
         }
       } else if (data.action === "send/link") {
-        setLink((link) => data.result.link);
-        setDesc((desc) => data.result.desc);
+        const room = data.result.room;
+        setLinks((link) => room.links);
+      } else if (data.action === "delete/link") {
+        const room = data.result.room;
+        setRoom(() => room);
+        setLinks((link) => room.links);
       }
     });
 
@@ -30,29 +32,29 @@ function LiveAddedLink() {
     });
   }, []);
 
-  return link && desc ? (
-    <Box
-      component={Link}
-      to={link}
-      target='_blank'
-      sx={{
-        p: 1,
-        borderRadius: 0.5,
-        backgroundColor: "#ffffff56",
-        display: "flex",
-        flexDirection: "row",
-        alignItems: "center",
-        textDecoration: "none",
-        color: "#ffffff",
-        // color: "#44ec7c",
-      }}
-      dangerouslySetInnerHTML={{
-        __html: `<span>📢 [notice] ${desc}</span>`,
-      }}
-    />
-  ) : (
-    <></>
-  );
+  return admin ? <PopupList links={links} /> : <PopupSlide links={links} />;
+  // {/* {links.map((link, i) => (
+  //   <Box
+  //     key={i}
+  //     component={Link}
+  //     to={link.link}
+  //     target='_blank'
+  //     sx={{
+  //       p: 1,
+  //       borderRadius: 0.5,
+  //       backgroundColor: "#ffffff56",
+  //       display: "flex",
+  //       flexDirection: "row",
+  //       alignItems: "center",
+  //       textDecoration: "none",
+  //       color: "#ffffff",
+  //       // color: "#44ec7c",
+  //     }}
+  //     dangerouslySetInnerHTML={{
+  //       __html: `<span>📢 [notice] ${link.desc}</span>`,
+  //     }}
+  //   />
+  // ))} */}
 }
 
 export default LiveAddedLink;
