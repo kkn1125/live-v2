@@ -71,7 +71,7 @@ function ViewLiveRoom() {
         chunkFetchStreamLoop = setInterval(() => {
           socket.sendBinary(SIGNAL.STREAM, "fetch", {
             chunkIndex: countDownloadChunk,
-            roomId: room.id,
+            roomId: params.roomId,
           });
         }, streaminRecordInterval);
         // try {
