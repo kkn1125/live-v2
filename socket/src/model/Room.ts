@@ -141,10 +141,11 @@ export default class Room {
 
   updateUser(userId: string, userData: User) {
     const user = this.findUser(userId);
-    console.log("userData", userData);
+    console.log("😥before update user:", userData);
     if (user) {
       Object.assign(user, { ...userData });
     }
+    console.log("✨after update user:", userData);
     return user;
   }
 
@@ -156,7 +157,7 @@ export default class Room {
   addStream(stream: string) {
     const buffer = new Uint8Array(stream.split(",").map((s) => Number(s)));
     this.streams.push(buffer.buffer);
-    console.log("add buffer", buffer.buffer);
+    // console.log("add buffer", buffer.buffer);
     return buffer;
   }
 

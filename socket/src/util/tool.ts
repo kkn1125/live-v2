@@ -52,15 +52,16 @@ const saveFilesAsEncode = ({
   const m3u8Stream = fs.createWriteStream(TEMP_PATH(room, m3u8Filename));
   const tsStream = fs.createWriteStream(TEMP_PATH(room, tsFilename));
 
+  // let resolver: (value: unknown) => void;
+
+  // const result = new Promise((resolve) => (resolver = resolve));
+
   /* mp4 encoding */
   fs.writeFileSync(TEMP_PATH(room, filename), buffer);
+  
   ffmpeg(TEMP_PATH(room, filename))
     .output(TEMP_PATH(room, mp4Filename))
     // .output(mp4Stream)
-    // .input(TEMP_PATH(room, mp4Filename))
-    // .output(TEMP_PATH(room, m3u8Filename))
-    // .input(TEMP_PATH(room, m3u8Filename))
-    // .output(TEMP_PATH(room, tsFilename))
     .on("end", function () {
       console.log("Finished processing for mp4");
       ffmpeg(TEMP_PATH(room, mp4Filename))
@@ -73,12 +74,15 @@ const saveFilesAsEncode = ({
             // .output(tsStream)
             .on("end", function () {
               console.log("Finished processing for ts");
+              // resolver(true);
             })
             .run();
         })
         .run();
     })
     .run();
+
+  // return result;
 };
 
 export { dev, queryParser, TEMP_PATH, saveFilesAsEncode };

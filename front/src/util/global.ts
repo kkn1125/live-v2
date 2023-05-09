@@ -73,6 +73,7 @@ type LiveSocketSpecialActionType =
   | "update"
   | "join"
   | "out"
+  | `out/${"target"}`
   | `like`;
 type LiveSocketActionType =
   | LiveSocketBasicActionType

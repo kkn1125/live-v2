@@ -21,6 +21,7 @@ import VideoJS from "../components/moleculars/VideoJS";
 import videojs from "video.js";
 import Player from "video.js/dist/types/player";
 import PopupSlide from "../components/moleculars/PopupSlide";
+import Preview from "../components/moleculars/Preview";
 
 const hls = new Hls({});
 
@@ -29,6 +30,9 @@ function Home() {
   const socket = useContext(LiveSocketContext);
   const socketDispatch = useContext(LiveSocketDispatchContext);
   const playerRef = useRef<HTMLVideoElement>();
+  const [onMouse, setOnMouse] = useState(false);
+
+  const roomIdRef = useRef("");
 
   const roomHandler: DataLiveSocketEventListenerType = (type, origin, data) => {
     if (data.action === "create") {
@@ -94,36 +98,36 @@ function Home() {
     };
   }, []);
 
-  const videoJsOptions = {
-    autoplay: true,
-    controls: true,
-    responsive: true,
-    fluid: true,
-    sources: [
-      {
-        src: "/tuto/videos/sample720.m3u8",
-        type: "application/x-mpegurl",
-      },
-    ],
-    liveui: true,
-  };
+  // const videoJsOptions = {
+  //   autoplay: true,
+  //   controls: true,
+  //   responsive: true,
+  //   fluid: true,
+  //   sources: [
+  //     {
+  //       src: "/tuto/videos/sample720.m3u8",
+  //       type: "application/x-mpegurl",
+  //     },
+  //   ],
+  //   liveui: true,
+  // };
 
-  const handlePlayerReady = (player: Player) => {
-    (playerRef.current as any) = player;
+  // const handlePlayerReady = (player: Player) => {
+  //   (playerRef.current as any) = player;
 
-    player.src("/tuto/videos/sample720.m3u8");
+  //   player.src("/tuto/videos/sample720.m3u8");
 
-    // You can handle player events here, for example:
-    // @ts-ignore
-    player.on("waiting", () => {
-      videojs.log("player is waiting");
-    });
+  //   // You can handle player events here, for example:
+  //   // @ts-ignore
+  //   player.on("waiting", () => {
+  //     videojs.log("player is waiting");
+  //   });
 
-    // @ts-ignore
-    player.on("dispose", () => {
-      videojs.log("player will dispose");
-    });
-  };
+  //   // @ts-ignore
+  //   player.on("dispose", () => {
+  //     videojs.log("player will dispose");
+  //   });
+  // };
 
   return (
     <Stack sx={{ height: "100%" }}>
@@ -137,6 +141,16 @@ function Home() {
           alignItems='center'
           sx={{
             p: 3,
+          }}
+          onMouseEnter={() => {
+            console.log("in", room.id);
+            setOnMouse(true);
+            roomIdRef.current = room.id;
+          }}
+          onMouseLeave={() => {
+            console.log("out");
+            setOnMouse(false);
+            roomIdRef.current = "";
           }}>
           <EnterAnswer
             type='enter'
@@ -164,6 +178,9 @@ function Home() {
           </EnterAnswer>
         </Stack>
       ))}
+      <Box sx={{ width: 300 }}>
+        {onMouse && roomIdRef.current && <Preview roomId={roomIdRef.current} />}
+      </Box>
       {/* <PopupSlide
         links={[
           { link: "test1", desc: "wow1" },

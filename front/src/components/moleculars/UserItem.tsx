@@ -9,10 +9,14 @@ function UserItem({ user = {} }: { user: any }) {
   const socket = useContext(LiveSocketContext);
 
   function handleRemoveUser() {
-    socket.sendBinary(SIGNAL.ROOM, "out", {
-      roomId: user.involveRoomId,
-      userId: user.id,
-    });
+    if (
+      confirm(`해당 유저를 강제 퇴장 시키겠습니까?\n사용자 닉네임: ${user.id}`)
+    ) {
+      socket.sendBinary(SIGNAL.ROOM, "out/target", {
+        roomId: user.involveRoomId,
+        userId: user.id,
+      });
+    }
   }
 
   return (

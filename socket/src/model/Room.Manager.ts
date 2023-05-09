@@ -78,9 +78,9 @@ export default class RoomManager
     if (index > -1) {
       const deletedRoom = this.splice(index, 1)[0];
       // console.log("room delete", deletedRoom);
-      return true;
+      return deletedRoom;
     }
-    return false;
+    return undefined;
   }
 
   findUser(userId: string) {

@@ -1,23 +1,18 @@
-import { Box, Button, Chip, CircularProgress, Typography } from "@mui/material";
-import Hls from "hls.js";
-import { useContext, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { v4 } from "uuid";
-import Player from "video.js/dist/types/player";
-import CustomVideo from "../components/moleculars/CustomVideo";
-import PopupModal from "../components/moleculars/PopupModal";
-import LiveCommerceLayout from "../components/templates/LiveCommerceLayout";
+import { Box } from "@mui/material";
+import React, { useContext, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   LiveSocketContext,
   LiveSocketDispatchContext,
-} from "../context/LiveSocketProvider";
+} from "../../context/LiveSocketProvider";
 import {
   CODEC,
   INTERCEPT,
   LIVE_SOCKET_ACTION,
   SIGNAL,
   streaminRecordInterval,
-} from "../util/global";
+} from "../../util/global";
+import CustomVideo from "./CustomVideo";
 
 let mediaSource: MediaSource;
 let videoBuffer: SourceBuffer | undefined = undefined;
@@ -34,27 +29,16 @@ const config = {
   fragLoadingMaxRetry: 3,
 };
 
-const hlsVideo = new Hls(config);
-
-function ViewLiveRoom() {
+function Preview({ roomId }: { roomId: string }) {
   const videoRef = useRef<HTMLVideoElement>();
   const locate = useLocation();
-  const params = useParams();
-  const [isLive, setIsLive] = useState(false);
   const socket = useContext(LiveSocketContext);
-  const [room, setRoom] = useState<any>({});
   const socketDispatch = useContext(LiveSocketDispatchContext);
-  const navigate = useNavigate();
-  const playerRef = useRef<Player | null>(null);
   const [loading, setLoading] = useState(true);
   const [percentage, setPercentage] = useState(0);
-  const [isSeekable, setIsSeekable] = useState(false);
+  const [isLive, setIsLive] = useState(false);
   const [isWrongPath, setIsWrongPath] = useState(false);
-  // const [nickname, setNickname] = useState(
-  //   locate.state?.nickname || "Guest-" + v4({})
-  // );
-  const [user, setUser] = useState<any>({});
-
+  console.log(roomId);
   useEffect(() => {
     mediaSource = new MediaSource();
 
@@ -71,7 +55,7 @@ function ViewLiveRoom() {
         chunkFetchStreamLoop = setInterval(() => {
           socket.sendBinary(SIGNAL.STREAM, "fetch", {
             chunkIndex: countDownloadChunk,
-            roomId: room.id,
+            roomId: roomId,
           });
         }, streaminRecordInterval);
         // try {
@@ -111,6 +95,11 @@ function ViewLiveRoom() {
                   setLoading(() => true);
                 } else {
                   setLoading(() => false);
+                  setTimeout(() => {
+                    if (videoRef.current) {
+                      videoRef.current.play();
+                    }
+                  }, 100);
                 }
                 // console.log(videoRef.current?.currentTime);
                 countDownloadChunk++;
@@ -139,83 +128,26 @@ function ViewLiveRoom() {
 
       socket.on(SIGNAL.ROOM, (type, origin, data) => {
         console.log("room type", data);
-        if (data.action === "join") {
-          setRoom((room) => data.result.room);
-        } else if (data.action === "out") {
-          setRoom((room) => data.result.room);
-          // if (
-          //   data.result.room.users.some((roomUser) => roomUser.id === user.id)
-          // ) {
-          // } else {
-          //   console.log("여기 나간다?");
-          //   setIsWrongPath(() => true);
-          // }
-        } else if (data.action === "out/target") {
-          // if (
-          //   data.result.room.users.some((roomUser) => roomUser.id === user.id)
-          // ) {
-          //   setRoom((room) => data.result.room);
-          // } else {
-          // }
-          console.log("여기 나간다?");
-          setIsWrongPath(() => true);
-        }
       });
 
-      socket.on(SIGNAL.USER, (type, origin, data) => {
-        if (
-          data.action === "update" ||
-          data.action === "fetch" ||
-          data.action === "delete"
-        ) {
-          if (data?.result?.room) {
-            setRoom((room) => data.result.room);
-          }
-          if (data?.result?.user) {
-            setUser((user) => data.result.user);
-          }
-        }
-      });
+      socket.on(SIGNAL.USER, (type, origin, data) => {});
 
-      socket.on(SIGNAL.ROOM, (type, origin, data) => {
-        if (data.action === "find") {
-          const room = data.result.room;
-          if (!room) {
-            setIsWrongPath(() => true);
-          }
-        } else if (data.action === "delete") {
-          setIsWrongPath(() => true);
-        }
-      });
+      socket.on(SIGNAL.ROOM, (type, origin, data) => {});
 
       socket.on(INTERCEPT.ERROR, (type, origin) => {
         alert("오류가 발생했습니다.");
 
         clearInterval(chunkFetchStreamLoop);
         clearInterval(chunkDownloadStreamLoop);
-
-        socketDispatch({
-          type: LIVE_SOCKET_ACTION.OUT,
-          roomId: params.roomId,
-        });
-
-        setIsWrongPath(() => true);
       });
 
       socket.on(INTERCEPT.CLOSE, (type, origin) => {
         clearInterval(chunkFetchStreamLoop);
         clearInterval(chunkDownloadStreamLoop);
-
-        socketDispatch({
-          type: LIVE_SOCKET_ACTION.OUT,
-          roomId: params.roomId,
-        });
-
-        setIsWrongPath(() => true);
       });
 
       socket.sendBinary(SIGNAL.ROOM, "find", {
-        roomId: params.roomId,
+        roomId: roomId,
       });
 
       socket.sendBinary(SIGNAL.USER, "update", {
@@ -223,14 +155,14 @@ function ViewLiveRoom() {
           locate.state?.nickname || "Guest" + Math.floor(Math.random() * 100),
       });
 
-      socketDispatch({
-        type: LIVE_SOCKET_ACTION.JOIN,
-        roomId: params.roomId,
-      });
+      // socketDispatch({
+      //   type: LIVE_SOCKET_ACTION.JOIN,
+      //   roomId: roomId,
+      // });
 
       socket.sendBinary(SIGNAL.USER, "fetch");
 
-      if (!params.roomId) {
+      if (!roomId) {
         setIsWrongPath(() => true);
       }
 
@@ -238,9 +170,7 @@ function ViewLiveRoom() {
       // 현재는 리로드하면 페이지 홈으로 가도록 설정
     });
 
-    window.addEventListener("beforeunload", () => {
-      outRoom();
-    });
+    /* TODO: 여기서 return 대신 상위 컴포넌트에서 핸들러 받아 초기화 해야함 - 2023-05-09 19:59:29 */
 
     return () => {
       clearInterval(chunkFetchStreamLoop);
@@ -249,7 +179,6 @@ function ViewLiveRoom() {
       countDownloadChunk = 0;
       streamPoint = 0;
       streams = [];
-      outRoom();
       socket.off(SIGNAL.ROOM);
       socket.off(SIGNAL.STREAM);
       socket.off(SIGNAL.USER);
@@ -258,77 +187,20 @@ function ViewLiveRoom() {
     };
   }, []);
 
-  function outRoom() {
-    socketDispatch({
-      type: LIVE_SOCKET_ACTION.OUT,
-      roomId: params.roomId,
-    });
-  }
-
-  const handleClosePopup = (e: MouseEvent) => {
-    navigate("/");
-  };
-
   function handleSeekToLive() {
     if (videoRef.current) {
       videoRef.current.currentTime = streamPoint;
     }
   }
 
-  return isWrongPath ? (
+  return (
     <Box
       sx={{
-        height: "inherit",
-        color: "#ffffff",
-        backgroundColor: "#222222",
+        width: "100%",
       }}>
-      <PopupModal type='deleted' immediately handler={handleClosePopup} />
-    </Box>
-  ) : (
-    <Box
-      sx={{
-        height: "100vh",
-      }}>
-      {loading && (
-        <Box
-          sx={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            color: "#ffffff",
-            zIndex: 100,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "#000000a5",
-            width: "100vw",
-            height: "100vh",
-            flexDirection: "column",
-          }}>
-          <Typography>🚀 Loading... {percentage.toFixed(2)}%</Typography>
-          <CircularProgress color='inherit' />
-        </Box>
-      )}
-      {
-        <LiveCommerceLayout
-          room={room}
-          user={user}
-          loading={loading}
-          isLive={isLive}
-          handleSeekToLive={handleSeekToLive}
-          video={
-            <Box
-              sx={{
-                position: "absolute",
-                width: "100%",
-              }}>
-              <CustomVideo videoRef={videoRef} />
-            </Box>
-          }
-        />
-      }
+      <CustomVideo videoRef={videoRef} />
     </Box>
   );
 }
 
-export default ViewLiveRoom;
+export default Preview;

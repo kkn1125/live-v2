@@ -106,27 +106,135 @@ export default async function binaryHandler(
           publisher.manager.publishBinaryTo(app, ws, room.id, base, { room });
         }
       } else if (base.action === "out") {
-        const targetUser = base.data.userId || (ws as any).userId;
-        const targetRoom = base.data.roomId;
-        const room = targetRoom
-          ? manager.rooms.findOne(targetRoom)
-          : manager.rooms.findOneUserIn(targetUser);
+        const roomId = base.data.roomId;
+        const room = manager.rooms.findOne(roomId);
+
         if (room) {
-          if (base.data.userId) {
-            const user = manager.users.findOne(base.data.userId);
-            if (user) {
-              user.socket.unsubscribe(room.id);
-            }
-          } else {
+          if (room.findUser((ws as any).userId)) {
+            manager.out(room.id, (ws as any).userId);
+
+            publisher.manager.publishBinaryTo(app, ws, room.id, base, {
+              room,
+            });
             ws.unsubscribe(room.id);
           }
-          manager.out(room.id, targetUser);
-          publisher.manager.publishBinaryTo(app, ws, room.id, base, { room });
         }
+      } else if (base.action === "out/target") {
+        const roomId = base.data.roomId;
+        const userId = base.data.userId;
+
+        const room = manager.rooms.findOne(roomId);
+        const user = manager.users.findOne(userId);
+
+        manager.out(room.id, user.id);
+
+        publisher.manager.publishBinaryTo(app, ws, room.id, base, {
+          room,
+          userId,
+        });
+
+        user.socket.unsubscribe(room.id);
       } else if (base.action === "delete") {
         const room = manager.rooms.delete(base.data.roomId);
         const rooms = manager.rooms.findAll();
+
+        let temp = new Uint8Array();
+
+        const startTime = +new Date();
+        console.log("start convert base time", startTime);
+
+        console.log("delete room!");
+
+        /* 녹화 파일 인코딩 합본 프로세스 - 2023-05-09 19:02:38 */
+        // const fileNames: string[] = [];
+        // if (room) {
+        //   console.log("collecting recording buffers...");
+        //   // const stream = fs.createWriteStream(TEMP_PATH(room, "test.txt"));
+        //   const convertTime = +new Date();
+        //   console.log("start convert");
+        //   for (let i = 0; i < room.streams.length; i++) {
+        //     const filename = TEMP_PATH(room, "test-" + i + ".webm");
+        //     const time = +new Date();
+        //     fs.writeFileSync(filename, new Uint8Array(room.streams[i]));
+
+        //     const gap = time - +new Date();
+        //     console.log(
+        //       `${filename} 저장 시: ${gap / 1000}초 소요 | 시작시간부터 ${
+        //         (time - convertTime) / 1000
+        //       }초 소요`
+        //     );
+
+        //     fileNames.push(filename);
+        //   }
+
+        //   const mergedVideo = ffmpeg();
+
+        //   fileNames.forEach((name) => {
+        //     console.log("file add:", name);
+        //     mergedVideo.addInput(name);
+        //   });
+
+        //   mergedVideo
+        //     .mergeToFile(TEMP_PATH(room, "test.webm"), TEMP_PATH(room, ""))
+        //     .on("error", () => {
+        //       console.log("error!");
+        //     })
+        //     .on("end", () => {
+        //       console.log("save buffer to file as webm!");
+        //       const saveWebmTime = +new Date();
+        //       console.log(
+        //         `webm 저장 시점 ${(saveWebmTime - convertTime) / 1000}초 소요`
+        //       );
+
+        //       const convertVideo = ffmpeg();
+        //       convertVideo
+        //         .input(TEMP_PATH(room, "test.webm"))
+        //         .output(TEMP_PATH(room, "video.mp4"))
+        //         .on("end", () => {
+        //           console.log("convert webm to mp4!");
+        //           const saveMp4Time = +new Date();
+        //           console.log(
+        //             `webm 저장 시점 ${
+        //               (saveMp4Time - convertTime) / 1000
+        //             }초 소요`
+        //           );
+
+        //           const deleteStart = +new Date();
+        //           fileNames.forEach((name) => {
+        //             fs.unlinkSync(name);
+        //           });
+        //           const deleteEnd = +new Date();
+
+        //           console.log(
+        //             `개별 webm 삭제 시 총 ${
+        //               (deleteEnd - deleteStart) / 1000
+        //             }초 소요`
+        //           );
+
+        //           const deleteConcatWebm = +new Date();
+
+        //           fs.unlinkSync(TEMP_PATH(room, "test.webm"));
+
+        //           const deleteConcatWebmDone = +new Date();
+        //           console.log(
+        //             `합본 webm 삭제 시간 ${
+        //               (deleteConcatWebmDone - deleteConcatWebm) / 1000
+        //             }초 소요`
+        //           );
+        //           console.log(
+        //             `최종 완료까지 ${
+        //               (deleteConcatWebmDone - convertTime) / 1000
+        //             }초 소요`
+        //           );
+        //         })
+        //         .run();
+        //     });
+
+        //   // saveFilesAsEncode({ room, buffer: readFile, prefix: "stream" });
+        // }
+
         publisher.manager.publish(app, ws, base, {
+          room,
           rooms,
           roomId: base.data.roomId,
         });
@@ -198,8 +306,6 @@ export default async function binaryHandler(
           /* add stream */
           const buffer = room.addStream(base.data.stream);
 
-          saveFilesAsEncode({ room, buffer, prefix: "stream" });
-
           room.chunkUploadCount++;
 
           // const file = fs.readFileSync(TEMP_PATH(room, filename));
@@ -211,7 +317,8 @@ export default async function binaryHandler(
           });
         }
       } else if (base.action === "fetch") {
-        const room = manager.rooms.findOneUserIn((ws as any).userId);
+        console.log("fetch 아닌가?", base.data.roomId);
+        const room = manager.rooms.findOne(base.data.roomId);
         if (room) {
           /* get stream */
           const stream = room.getStream(base.data.chunkIndex);

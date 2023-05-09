@@ -283,7 +283,7 @@ export default class LiveSocket {
     listener: DataLiveSocketEventListenerType
   ): void;
   removeListener(type: any, listener: any) {
-    const index = this.events[type].listeners.findIndex(
+    const index = this.events[type]?.listeners.findIndex(
       (ls) => ls === listener
     );
     if (index > -1) {

@@ -151,6 +151,9 @@ function RenewLiveRoom() {
       setRoom((room) => data.result.room);
     } else if (data.action === "join" || data.action === "out") {
       setRoom((room) => data.result.room);
+    } else if (data.action === "out/target") {
+      console.log("out/target 인가?", data);
+      setRoom((room) => data.result.room);
     } else if (data.action === "send/link") {
       setLink(data.result.link);
       setDesc(data.result.desc);

@@ -5,7 +5,7 @@ export default class UserManager
   extends Array<User>
   implements ManagerImpl<User>
 {
-  initialize(): void {
+  initialize() {
     this.splice(0, this.length);
     console.log("initialize", this);
   }
@@ -16,7 +16,7 @@ export default class UserManager
   }: {
     query?: { [k in keyof User]?: User[keyof User] };
     sort?: { [k in keyof User]?: "asc" | "desc" | "ASC" | "DESC" };
-  }): User[] {
+  }) {
     let temp: User[] = this.slice(0);
 
     if (query) {
@@ -45,7 +45,7 @@ export default class UserManager
     return temp;
   }
 
-  findOne(id: string): User {
+  findOne(id: string) {
     return this.find((user) => user.id === id);
   }
 
@@ -53,15 +53,15 @@ export default class UserManager
     return this.findIndex((user) => user.id === id);
   }
 
-  insert(id: string): User {
+  insert(id: string) {
     const user = new User(id);
     this.push(user);
     return user;
   }
 
-  update(id: string, newUser: User): User {
+  update(id: string, newUser: User) {
     const user = this.find((user) => user.id === id);
-    console.log(newUser)
+    console.log(newUser);
     if (user) {
       Object.assign(user, { ...newUser });
       console.log("user update", user);
@@ -69,13 +69,13 @@ export default class UserManager
     return user;
   }
 
-  delete(id: string): boolean {
+  delete(id: string) {
     const index = this.findIndex((user) => user.id === id);
     if (index > -1) {
       const deletedUser = this.splice(index, 1)[0];
       // console.log("user delete", deletedUser);
-      return true;
+      return deletedUser;
     }
-    return false;
+    return undefined;
   }
 }

@@ -10,6 +10,6 @@ export default interface ManagerImpl<T> {
   findOneIndex(id: string): number;
   insert(id: string): T;
   update(id: string, t: Object): T;
-  delete(id: string): boolean;
+  delete(id: string): T | undefined;
   initialize(): void;
 }
