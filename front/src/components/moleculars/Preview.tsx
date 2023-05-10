@@ -20,9 +20,10 @@ let streams: ArrayBuffer[] = [];
 let countUploadChunk = 0;
 let countDownloadChunk = 0;
 let chunkFetchStreamLoop: NodeJS.Timer;
-let chunkDownloadStreamLoop: NodeJS.Timer;
 let streamPoint = 0;
 let startPoint = 0;
+
+let sendTiming: NodeJS.Timer;
 
 const config = {
   fragLoadingTimeOut: 10000,
@@ -38,7 +39,7 @@ function Preview({ roomId }: { roomId: string }) {
   const [percentage, setPercentage] = useState(0);
   const [isLive, setIsLive] = useState(false);
   const [isWrongPath, setIsWrongPath] = useState(false);
-  console.log(roomId);
+
   useEffect(() => {
     mediaSource = new MediaSource();
 
@@ -51,23 +52,17 @@ function Preview({ roomId }: { roomId: string }) {
         videoBuffer.mode = "sequence";
       };
 
-      setTimeout(() => {
+      sendTiming = setTimeout(() => {
         chunkFetchStreamLoop = setInterval(() => {
+          console.log("송신");
           socket.sendBinary(SIGNAL.STREAM, "fetch", {
             chunkIndex: countDownloadChunk,
             roomId: roomId,
           });
         }, streaminRecordInterval);
-        // try {
-        //   hlsVideo.loadSource(
-        //     `/hls/?roomId=41322d81-65f9-4220-8fc8-54ad0f3f3092&chunkIndex=${countDownloadChunk}`
-        //   );
-        //   countDownloadChunk++;
-        // } catch (error) {}
       }, 1000);
 
       socket.on(SIGNAL.STREAM, (type, origin, data) => {
-        // (videoBuffer as SourceBuffer).onupdateend = () => {
         if (data.action === "fetch") {
           const stream = data.result.stream;
           streamPoint = Number(data.result.streamPoint);
@@ -97,11 +92,11 @@ function Preview({ roomId }: { roomId: string }) {
                   setLoading(() => false);
                   setTimeout(() => {
                     if (videoRef.current) {
+                      videoRef.current.muted = true;
                       videoRef.current.play();
                     }
                   }, 100);
                 }
-                // console.log(videoRef.current?.currentTime);
                 countDownloadChunk++;
 
                 const timeIntervalRatio = 1000 / streaminRecordInterval;
@@ -137,13 +132,13 @@ function Preview({ roomId }: { roomId: string }) {
       socket.on(INTERCEPT.ERROR, (type, origin) => {
         alert("오류가 발생했습니다.");
 
+        clearTimeout(sendTiming);
         clearInterval(chunkFetchStreamLoop);
-        clearInterval(chunkDownloadStreamLoop);
       });
 
       socket.on(INTERCEPT.CLOSE, (type, origin) => {
+        clearTimeout(sendTiming);
         clearInterval(chunkFetchStreamLoop);
-        clearInterval(chunkDownloadStreamLoop);
       });
 
       socket.sendBinary(SIGNAL.ROOM, "find", {
@@ -154,11 +149,6 @@ function Preview({ roomId }: { roomId: string }) {
         nickname:
           locate.state?.nickname || "Guest" + Math.floor(Math.random() * 100),
       });
-
-      // socketDispatch({
-      //   type: LIVE_SOCKET_ACTION.JOIN,
-      //   roomId: roomId,
-      // });
 
       socket.sendBinary(SIGNAL.USER, "fetch");
 
@@ -171,10 +161,12 @@ function Preview({ roomId }: { roomId: string }) {
     });
 
     /* TODO: 여기서 return 대신 상위 컴포넌트에서 핸들러 받아 초기화 해야함 - 2023-05-09 19:59:29 */
+    /* FEAT: 안해도 됨 2023-05-10 17:35:34 */
 
     return () => {
+      console.log("제거!");
+      clearTimeout(sendTiming);
       clearInterval(chunkFetchStreamLoop);
-      clearInterval(chunkDownloadStreamLoop);
       videoBuffer = undefined;
       countDownloadChunk = 0;
       streamPoint = 0;
