@@ -64,6 +64,7 @@ export default async function binaryHandler(
       } else if (base.action === "create") {
         const room = manager.rooms.insert(base.data.roomId);
         const user = manager.users.findOne((ws as any).userId);
+        ws.unsubscribe("waiting");
         ws.subscribe(room.id);
 
         if (base.data.roomTitle) {
@@ -92,7 +93,8 @@ export default async function binaryHandler(
           wrtStream.end();
         });
 
-        publisher.manager.publish(app, ws, base, { room, rooms });
+        publisher.manager.sendMe(ws, base, { room, rooms });
+        publisher.manager.sendOther(ws, "waiting", base, { room, rooms });
       } else if (base.action === "update") {
         const room = manager.rooms.update(base.data.roomId, base.data);
         const rooms = manager.rooms.findAll();
@@ -101,6 +103,7 @@ export default async function binaryHandler(
         const room = manager.rooms.findOne(base.data.roomId);
         const user = manager.users.findOne((ws as any).userId);
         if (room) {
+          ws.unsubscribe("waiting");
           ws.subscribe(room.id);
           room.join(user);
           publisher.manager.publishBinaryTo(app, ws, room.id, base, { room });
@@ -117,6 +120,7 @@ export default async function binaryHandler(
               room,
             });
             ws.unsubscribe(room.id);
+            ws.subscribe("waiting");
           }
         }
       } else if (base.action === "out/target") {
@@ -134,6 +138,7 @@ export default async function binaryHandler(
         });
 
         user.socket.unsubscribe(room.id);
+        user.socket.subscribe("waiting");
       } else if (base.action === "delete") {
         const room = manager.rooms.delete(base.data.roomId);
         const rooms = manager.rooms.findAll();
@@ -243,7 +248,9 @@ export default async function binaryHandler(
         const link = base.data.link;
         const desc = base.data.desc;
         room.deleteLink(link, desc);
-        publisher.manager.publish(app, ws, base, { room });
+
+        publisher.manager.sendMe(ws, { ...base }, { room });
+        publisher.manager.sendOther(ws, room.id, { ...base }, { room });
       }
       break;
     case "SIGNAL/USER":

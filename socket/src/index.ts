@@ -120,6 +120,7 @@ const app = uWS
     },
     open: (ws) => {
       ws.subscribe("global");
+      ws.subscribe("waiting");
       // ws.subscribe((ws as any).roomId);
       ws.subscribe((ws as any).userId);
       /* 유저 생성 */
